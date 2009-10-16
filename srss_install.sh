@@ -295,10 +295,10 @@ chmod +x $tmpdir/etc/X11/gdm/SunRayInit/helpers/xset
 
 echo "Making tar..."
 cd $tmpdir
-fakeroot tar czf $tmpdir/srss-4.0.tgz *
+fakeroot tar czf $tmpdir/srss-4.1_10.8.tgz *
 
 echo "Making .deb..."
-fakeroot alien -d $tmpdir/srss-4.0.tgz
+fakeroot alien -d $tmpdir/srss-4.1_10.8.tgz
 
 cp $tmpdir/srss*.deb ~/
 rm -rf $tmpdir
