@@ -93,45 +93,7 @@ chmod 644 $tmpdir/usr/share/applications/sunray-settings.desktop
 echo "Configuring GDM..."
 mkdir -p $tmpdir/etc/X11/xdm
 mkdir -p $tmpdir/etc/gdm
-cat > $tmpdir/etc/gdm/gdm.conf-custom << EOF
-[daemon]
-PostLoginScriptDir=/etc/opt/SUNWut/gdm//SunRayPostLogin/
-PreSessionScriptDir=/etc/opt/SUNWut/gdm//SunRayPreSession/
-PostSessionScriptDir=/etc/opt/SUNWut/gdm//SunRayPostSession/
-DisplayInitDir=/etc/opt/SUNWut/gdm//SunRayInit
-RebootCommand=/bin/false
-HaltCommand=/bin/false
-SuspendCommand=/bin/false
-HibernateCommand=/bin/false
-FlexibleXServers=0
-VTAllocation=false
-DynamicXServers=true
-DefaultSession=xfce4.desktop
-
-[xdmcp]
-Enable=false
-
-[greeter]
-SystemMenu=false
-SoundOnLogin=false
-ChooserButton=false
-Browser=false
-Greeter=/usr/lib/gdm/gdmlogin
-
-[debug]
-Enable=true
-
-[servers]
-0=inactive
-
-[server-Standard]
-name=Standard server
-command=/usr/bin/X -br -audit 0
-flexible=true
-
-[gui]
-AllowGtkThemeChange=false
-EOF
+cp $here/gdm.conf-custom $tmpdir/gdm.conf-custom 
 
 cat > $tmpdir/opt/SUNWut/lib/utctl.d/profiles/default <<EO
 #
@@ -282,19 +244,11 @@ exit 0
 EOca
 chmod +x $tmpdir/etc/opt/SUNWut/gdm//SunRayInit/helpers/xset
 
-
-#echo "Fixing Xnewt..."
-#mv $tmpdir/opt/SUNWut/lib/Xnewt $tmpdir/opt/SUNWut/lib/Xnewt.sun
-#cat > $tmpdir/opt/SUNWut/lib/Xnewt <<EO
-##!/bin/bash
-## add -kb as option in case no sane keyboard... +kb if you want the XKEYBOARD
-## extention for all Xnewt's. This can be set by the utxconfig program in
-## /opt/SUNWut/bin for each session if needed (enable or disable).
-##
-##  -Tim
-#exec /opt/SUNWut/lib/Xnewt.sun \$@ -fp /usr/share/fonts/X11/misc
-#EO
-#chmod +x $tmpdir/opt/SUNWut/lib/Xnewt
+echo "Xnewt needs at least 1 font, in one fontpath"
+mkdir -p $tmpdir/usr/share/X11/fonts
+ln -s /usr/share/fonts/X11/misc $tmpdir/usr/share/X11/fonts/misc
+mkdir -p $tmpdir/usr/lib/X11/fonts
+ln -s /usr/share/fonts/X11/misc $tmpdir/usr/lib/X11/fonts/misc
 
 echo "Making tar..."
 cd $tmpdir
