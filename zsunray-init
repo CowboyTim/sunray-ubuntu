@@ -1,0 +1,42 @@
+#!/bin/sh
+
+NAME=sunray
+DESC="Sunray services"
+case "$1" in
+  start)
+	echo "Starting $DESC: $NAME"
+    gconftool-2 --direct --config-source xml:readwrite:/etc/gconf/gconf.xml.mandatory --type bool --set /desktop/gnome/lockdown/disable_user_switching true
+    gconftool-2 --direct --config-source xml:readwrite:/etc/gconf/gconf.xml.mandatory --type bool --set /apps/gnome-power-manager/general/can_hibernate false
+    gconftool-2 --direct --config-source xml:readwrite:/etc/gconf/gconf.xml.mandatory --type bool --set /apps/gnome-power-manager/general/can_suspend false
+    gconftool-2 --direct --config-source xml:readwrite:/etc/gconf/gconf.xml.mandatory --type bool --set /apps/gnome-power-manager/general/can_shutdown false
+    gconftool-2 --direct --config-source xml:readwrite:/etc/gconf/gconf.xml.mandatory --type bool --set /apps/gnome-power-manager/general/can_restart false
+    gconftool-2 --direct --config-source xml:readwrite:/etc/gconf/gconf.xml.mandatory --type bool --set /apps/gnome_settings_daemon/plugins/keyboard false
+    gconftool-2 --direct --config-source xml:readwrite:/etc/gconf/gconf.xml.mandatory --type string --set /apps/gnome-screensaver/mode blank-only
+
+
+    /etc/init.d/openbsd-inetd start
+	/etc/init.d/gdm restart
+	/etc/init.d/utacleanup start
+	/etc/init.d/utds start
+	/etc/init.d/utsyscfg start
+	[ -x /etc/init.d/utstorage ] && /etc/init.d/utstorage start
+	/etc/init.d/utsvc start
+	;;
+  stop)
+	echo "Stopping $DESC: $NAME "
+	/etc/init.d/utsvc stop
+	[ -x /etc/init.d/utstorage ] && /etc/init.d/utstorage stop
+	/etc/init.d/utacleanup stop
+	/etc/init.d/utds stop
+	/etc/init.d/utsyscfg stop
+	/usr/bin/pkill -9 Xnewt
+	/usr/bin/pkill utaction
+	;;
+  *)
+	N=/etc/init.d/$NAME
+	echo "Usage: $N {start|stop}" >&2
+	exit 1
+	;;
+esac
+
+exit 0

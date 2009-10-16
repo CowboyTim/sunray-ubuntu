@@ -1,0 +1,424 @@
+diff -ru SUNWut.orig/utadem/utadem.c SUNWut/utadem/utadem.c
+--- SUNWut.orig/utadem/utadem.c	2007-08-23 13:15:48.000000000 +0200
++++ SUNWut/utadem/utadem.c	2007-08-23 13:20:20.000000000 +0200
+@@ -11,7 +11,7 @@
+ 
+ #include <linux/module.h>
+ #include <linux/moduleparam.h>
+-#include <linux/config.h>
++#include <linux/autoconf.h>
+ #include <linux/sched.h>
+ #include <linux/types.h>
+ #include <linux/errno.h>
+@@ -25,6 +25,7 @@
+ #include <linux/sound.h>
+ #include <linux/soundcard.h>
+ #include <linux/major.h>
++#include <linux/version.h>
+ #include <asm/atomic.h>
+ #include <asm/uaccess.h>
+ 
+@@ -2286,6 +2287,9 @@
+ 	struct uta_session *sess;
+ 	int ret;
+ 
++	if (!conn)
++		 return -ENOENT;
++
+ 	DPRINTF(2, "entering %s()\n", __FUNCTION__);
+ 
+ 	if (*ppos != file->f_pos)
+@@ -2384,6 +2388,17 @@
+ 	return (ret);
+ }
+ 
++#if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,10)
++static long
++utadem_compat_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
++{
++	if (!filp || !filp->f_dentry)
++		return -ENOENT;
++
++	return utadem_ioctl(filp->f_dentry->d_inode, filp, cmd, arg);
++}
++#endif
++
+ static int
+ utadsp_open(struct inode *inode, struct file *file)
+ {
+@@ -2509,6 +2524,9 @@
+ 	write:		utadsp_write,
+ 	poll:		utadsp_poll,
+ 	ioctl:		utadem_ioctl,
++#if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,10)
++	compat_ioctl:	utadem_compat_ioctl,
++#endif
+ 	open:		utadsp_open,
+ 	release:	utadsp_release,
+ };
+@@ -2593,6 +2611,9 @@
+ 	owner:		THIS_MODULE,
+ 	llseek:		no_llseek,
+ 	ioctl:		utadem_ioctl,
++#if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,10)
++	compat_ioctl:	utadem_compat_ioctl,
++#endif
+ 	open:		utamix_open,
+ 	release:	utamix_release,
+ };
+@@ -2661,6 +2682,7 @@
+ 	}
+ #endif
+ 
++#if LINUX_VERSION_CODE <= KERNEL_VERSION(2,6,10)
+ #if defined(CONFIG_COMPAT) || defined(CONFIG_SPARC64) || defined(CONFIG_X86_64) || defined(CONFIG_PPC64)
+ 	register_ioctl32_conversion(UTAIO_GETVERSION, (ioctl_trans_handler_t)0UL);
+ 	register_ioctl32_conversion(UTAIO_NEWSESSION, (ioctl_trans_handler_t)0UL);
+@@ -2672,6 +2694,7 @@
+ 	register_ioctl32_conversion(UTAIO_UNDERRUN, (ioctl_trans_handler_t)0UL);
+ 	register_ioctl32_conversion(UTAIO_OVERRUN, (ioctl_trans_handler_t)0UL);
+ #endif	/* CONFIG_COMPAT */
++#endif
+ 
+ 	/* hook into sound_core */
+ 	dsp_dev = register_sound_dsp(&utadsp_fops, -1);
+@@ -2728,6 +2751,7 @@
+ 	kfree(session_bits);
+ #endif
+ 
++#if LINUX_VERSION_CODE <= KERNEL_VERSION(2,6,10)
+ #if defined(CONFIG_COMPAT) || defined(CONFIG_SPARC64) || defined(CONFIG_X86_64) || defined(CONFIG_PPC64)
+ 	unregister_ioctl32_conversion(UTAIO_NEWSESSION);
+ 	unregister_ioctl32_conversion(UTAIO_GETMSG);
+@@ -2738,6 +2762,7 @@
+ 	unregister_ioctl32_conversion(UTAIO_UNDERRUN);
+ 	unregister_ioctl32_conversion(UTAIO_OVERRUN);
+ #endif	/* CONFIG_COMPAT */
++#endif
+ }
+ 
+ module_init(utadem_init);
+diff -ru SUNWut.orig/utadem/utadem.h SUNWut/utadem/utadem.h
+--- SUNWut.orig/utadem/utadem.h	2007-08-23 13:15:48.000000000 +0200
++++ SUNWut/utadem/utadem.h	2007-08-23 13:25:06.000000000 +0200
+@@ -14,7 +14,9 @@
+ 
+ #if defined(CONFIG_COMPAT) || defined(CONFIG_SPARC64) || defined(CONFIG_X86_64) || defined(CONFIG_PPC64)
+ #include <asm/uaccess.h>
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,22)
+ #include <linux/ioctl32.h>
++#endif
+ #include <linux/compat.h>
+ #endif	/* CONFIG_COMPAT */
+ 
+diff -ru SUNWut.orig/utdisk/utdisk.c SUNWut/utdisk/utdisk.c
+--- SUNWut.orig/utdisk/utdisk.c	2007-08-23 13:15:48.000000000 +0200
++++ SUNWut/utdisk/utdisk.c	2007-08-23 13:16:21.000000000 +0200
+@@ -20,6 +20,7 @@
+ #include <linux/hdreg.h>		/* HDIO */
+ #include <linux/proc_fs.h>		/* create_proc_read_entry */
+ #include <linux/init.h>			/* __init macro */
++#include <linux/version.h>
+ #include <scsi/scsi.h>			/* command values*/
+ #include <scsi/scsi_ioctl.h>		/* SCSI_IOCTL_SEND_COMMAND */
+ #include <scsi/scsi_cmnd.h>		/* MAX_COMMAND_SIZE */
+@@ -47,6 +48,7 @@
+ static int utdisk_release(struct inode *inodep, struct file *fp);
+ static int utdisk_media_changed(struct gendisk *gdp);
+ static int utdisk_revalidate_disk(struct gendisk *gdp);
++static int utdisk_getgeo(struct block_device *bdevp, struct hd_geometry *geo);
+ static int utdisk_ioctl(struct inode *inodep, struct file *fp,
+ 			unsigned int cmd, unsigned long arg);
+ static int utdisk_make_request(request_queue_t *q, struct bio *bio);
+@@ -69,6 +71,9 @@
+ 	.release =		utdisk_release,
+ 	.media_changed =	utdisk_media_changed,
+ 	.revalidate_disk =	utdisk_revalidate_disk,
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,16)
++        .getgeo =               utdisk_getgeo,
++#endif
+ };
+ 
+ 
+@@ -632,6 +637,55 @@
+         return (0);
+ }
+ 
++static int utdisk_getgeo(struct block_device *bdevp, struct hd_geometry *geo) {
++	struct gendisk		*gdp;
++	utdisk_state_t		*dsp;
++
++	utprintf("%s:\n", __FUNCTION__);
++
++	/* sanity check */
++	if ((bdevp == NULL)
++			|| ((gdp = bdevp->bd_disk) == NULL)
++			|| ((dsp = gdp->private_data) == NULL)
++			|| (utvalidate_dsp(dsp) == 0)) {
++		utprintf("%s: bad argument\n", __FUNCTION__);
++		return (-EINVAL);
++	}
++
++	utprintf("%s: dsp = %p ctlmin = %x nblocks = %d\n", __FUNCTION__, dsp, dsp->ctlmin, dsp->nblocks );
++
++	if (down_interruptible(&(dsp->lock)) == 0) {
++		if ((dsp->flags & UTDISK_STATE_STALE) != 0) {
++			utprintf("%s: stale device %d\n", __FUNCTION__,
++					dsp->ctlmin);
++			up(&(dsp->lock));
++			return (-ENXIO);
++		}
++		up(&(dsp->lock));
++	} else {
++		utprintf("%s: locking interrupted\n", __FUNCTION__);
++		return (-EIO);
++	}
++
++	if (dsp->nblocks != 0) {
++		geo->heads = UTDISK_DEFAULT_HEADS;
++		geo->sectors = UTDISK_DEFAULT_SECTORS;
++		geo->cylinders = (dsp->nblocks /
++				(UTDISK_DEFAULT_HEADS * UTDISK_DEFAULT_SECTORS));
++		geo->start = get_start_sect(bdevp);
++	} else {
++		geo->heads = 0;
++		geo->sectors = 0;
++		geo->cylinders = 0;
++		geo->start = 0;
++		utstk_check_media(dsp, bdevp);
++	}
++
++	utprintf("%s: geo heads = %d sectors = %d cylinders = %d start = %lx\n", __FUNCTION__,
++			geo->heads, geo->sectors, geo->cylinders, geo->start );
++
++	return 0;
++}
+ 
+ /*
+  * make a transfer request
+diff -ru SUNWut.orig/utdisk/utdiskctl.c SUNWut/utdisk/utdiskctl.c
+--- SUNWut.orig/utdisk/utdiskctl.c	2007-08-23 13:15:48.000000000 +0200
++++ SUNWut/utdisk/utdiskctl.c	2007-08-23 13:16:21.000000000 +0200
+@@ -23,6 +23,7 @@
+ #include <linux/init.h>			/* module entry-point macros */
+ #include <linux/fs.h>			/* device entry points */
+ #include <linux/proc_fs.h>		/* create_proc_read_entry */
++#include <linux/version.h>
+ #include <asm/uaccess.h>		/* userland access */
+ #include "utdisk.h"
+ #include "utdiskctl.h"
+@@ -62,6 +63,9 @@
+ 				size_t count, loff_t *ppos);
+ static int	utstk_ioctl(struct inode *inode, struct file *fp,
+ 				unsigned int command, unsigned long arg);
++#if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,10)
++static long utstk_compat_ioctl(struct file *filp, unsigned int cmd, unsigned long arg);
++#endif
+ static int	utstk_get_ctl_major(unsigned long arg, int flag32ptr);
+ static int	utstk_get_disk_major(unsigned long arg, int flag32ptr);
+ static int	utstk_hotplug(unsigned long arg, int flag32ptr);
+@@ -90,6 +94,11 @@
+ 	.open	 =	utstk_open,
+ 	.release =	utstk_release,
+ 	.ioctl	 =	utstk_ioctl,
++#if defined(CONFIG_COMPAT) || defined(CONFIG_SPARC64) || defined(CONFIG_X86_64) || defined(CONFIG_PPC64)
++#if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,10)
++	.compat_ioctl	 =	utstk_compat_ioctl,
++#endif
++#endif
+ 	.owner	 =	THIS_MODULE,
+ };
+ 
+@@ -185,6 +194,7 @@
+ 
+ #if defined(CONFIG_COMPAT) || defined(CONFIG_SPARC64) || defined(CONFIG_X86_64) || defined(CONFIG_PPC64)
+ /* This function tags all 32-bit ioctls so later code knows pointers are 32-bits */
++#if LINUX_VERSION_CODE <= KERNEL_VERSION(2,6,10)
+ static int
+ tag32_utstk_ioctl(unsigned int fd, unsigned int cmd, unsigned long arg, struct file *file)
+ {
+@@ -192,6 +202,15 @@
+ 
+ 	return(utstk_ioctl(inode, file, cmd | UTDISK_32BIT_PTRS, arg));
+ }
++
++#else
++
++static long
++utstk_compat_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
++{
++        return utstk_ioctl(filp->f_dentry->d_inode, filp, cmd | UTDISK_32BIT_PTRS, arg);
++}
++#endif
+ #endif	/* CONFIG_COMPAT */
+ 
+ 
+@@ -259,6 +278,7 @@
+ 
+ 	utprintf("%s: major=%d\n", __FUNCTION__, utdc_major);
+ 
++#if LINUX_VERSION_CODE <= KERNEL_VERSION(2,6,10)
+ #if defined(CONFIG_COMPAT) || defined(CONFIG_SPARC64) || defined(CONFIG_X86_64) || defined(CONFIG_PPC64)
+ 	register_ioctl32_conversion(UTDISK_HOTPLUG, &tag32_utstk_ioctl);
+ 	register_ioctl32_conversion(UTDISK_UNPLUG, &tag32_utstk_ioctl);
+@@ -269,6 +289,7 @@
+ 	register_ioctl32_conversion(UTDISK_GET_CDB, &tag32_utstk_ioctl);
+ 	register_ioctl32_conversion(UTDISK_DISK_READY, &tag32_utstk_ioctl);
+ #endif	/* CONFIG_COMPAT */
++#endif
+ 
+ 	return (0);
+ }
+@@ -306,6 +327,7 @@
+ 	utdisk_make_request_p = NULL;
+ 	utdisk_bd_ops = NULL;
+ 
++#if LINUX_VERSION_CODE <= KERNEL_VERSION(2,6,10)
+ #if defined(CONFIG_COMPAT) || defined(CONFIG_SPARC64) || defined(CONFIG_X86_64) || defined(CONFIG_PPC64)
+ 	unregister_ioctl32_conversion(UTDISK_HOTPLUG);
+ 	unregister_ioctl32_conversion(UTDISK_UNPLUG);
+@@ -316,6 +338,7 @@
+ 	unregister_ioctl32_conversion(UTDISK_GET_CDB);
+ 	unregister_ioctl32_conversion(UTDISK_DISK_READY);
+ #endif	/* CONFIG_COMPAT */
++#endif
+ }
+ 
+ 
+diff -ru SUNWut.orig/utdisk/utdiskctl.h SUNWut/utdisk/utdiskctl.h
+--- SUNWut.orig/utdisk/utdiskctl.h	2007-08-23 13:15:48.000000000 +0200
++++ SUNWut/utdisk/utdiskctl.h	2007-08-23 13:32:52.000000000 +0200
+@@ -25,7 +25,9 @@
+ #include <linux/ioctl.h>
+ #if defined(CONFIG_COMPAT) || defined(CONFIG_SPARC64) || defined(CONFIG_X86_64) || defined(CONFIG_PPC64)
+ #include <asm/uaccess.h>
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,22)
+ #include <linux/ioctl32.h>
++#endif
+ #include <linux/compat.h>
+ #endif	/* CONFIG_COMPAT */
+ 
+diff -ru SUNWut.orig/utio/utio.c SUNWut/utio/utio.c
+--- SUNWut.orig/utio/utio.c	2007-08-23 13:15:48.000000000 +0200
++++ SUNWut/utio/utio.c	2007-08-23 13:16:21.000000000 +0200
+@@ -9,7 +9,7 @@
+ static char __attribute__ ((unused)) *_SCCSid = "@(#)utio.c	1.9	06/09/07 SMI";
+ #endif	/* defined _SCCSID */
+ 
+-#include <linux/config.h>
++#include <linux/autoconf.h>
+ #include <linux/module.h>
+ #include <linux/moduleparam.h>
+ #include <linux/fs.h>
+@@ -26,6 +26,7 @@
+ #include <linux/ioctl.h>
+ #include <linux/termios.h>
+ #include <linux/ppdev.h>
++#include <linux/version.h>
+ #include <asm/atomic.h>
+ #include <asm/uaccess.h>
+ 
+@@ -193,6 +194,8 @@
+ static int daemon_write(struct file *file, const char *ubuf, size_t size);
+ static int daemon_ioctl(struct inode *inode, struct file *file,
+     unsigned int cmd, unsigned long arg);
++static int compat_daemon_ioctl(unsigned int fd, unsigned int cmd, unsigned long arg, struct file *file);
++static int compat_paralleld_ioctl(unsigned int fd, unsigned int cmd, unsigned long arg, struct file *file);
+ static unsigned int daemon_poll(struct file *file,
+     struct poll_table_struct *wait);
+ 
+@@ -1480,6 +1483,11 @@
+ 	utio_pmsg_t pmsg;
+ 	int ret;
+ 
++#if defined(CONFIG_COMPAT) || defined(CONFIG_SPARC64) || defined(CONFIG_X86_64) || defined(CONFIG_PPC64)
++	if (cmd == COMPAT_PPGETTIME)
++		return (compat_paralleld_ioctl(0, cmd, arg, file));
++#endif
++
+ 	DPRINTF(2, "entering %s()\n", __FUNCTION__);
+ 
+ 	if (!sess || !has_daemon(sess))
+@@ -1672,6 +1680,12 @@
+ 
+ 	/* these don't require the session to exist */
+ 	switch (cmd) {
++#if defined(CONFIG_COMPAT) || defined(CONFIG_SPARC64) || defined(CONFIG_X86_64) || defined(CONFIG_PPC64)
++	case COMPAT_UTIO_GETMSG:
++		return (compat_daemon_ioctl(0, cmd, arg, file));
++	case COMPAT_UTIO_PUTMSG:
++		return (compat_daemon_ioctl(0, cmd, arg, file));
++#endif
+ 	case UTIO_GETVERSION:
+ 		DPRINTF(3, " - UTIO_GETVERSION\n");
+ 		return (put_user(UTIO_VERSION, (unsigned long *)arg));
+@@ -2026,6 +2040,14 @@
+ 	return (ret);
+ }
+ 
++#if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,10)
++static long
++utio_compat_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
++{
++	return utio_ioctl(filp->f_dentry->d_inode, filp, cmd, arg);
++}
++#endif
++
+ static int
+ utio_open(struct inode *inode, struct file *file)
+ {
+@@ -2187,6 +2209,9 @@
+ 	write:		utio_write,
+ 	poll:		utio_poll,
+ 	ioctl:		utio_ioctl,
++#if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,10)
++	compat_ioctl:	utio_compat_ioctl,
++#endif
+ 	open:		utio_open,
+ 	release:	utio_release,
+ };
+@@ -2255,6 +2280,7 @@
+ 	    return (-ENOMEM);
+ 	}
+ 
++#if LINUX_VERSION_CODE <= KERNEL_VERSION(2,6,10)
+ #if defined(CONFIG_COMPAT) || defined(CONFIG_SPARC64) || defined(CONFIG_X86_64) || defined(CONFIG_PPC64)
+ 	register_ioctl32_conversion(COMPAT_UTIO_GETMSG, &compat_daemon_ioctl);
+ 	register_ioctl32_conversion(COMPAT_UTIO_PUTMSG, &compat_daemon_ioctl);
+@@ -2263,6 +2289,7 @@
+ 	register_ioctl32_conversion(UTIO_GETMAJOR, (ioctl_trans_handler_t)0UL);
+ 	register_ioctl32_conversion(UTIO_GETDEVID, (ioctl_trans_handler_t)0UL);
+ #endif	/* CONFIG_COMPAT */
++#endif
+ 
+ 	/* init successful */
+ 	return (0);
+@@ -2273,6 +2300,7 @@
+ {
+ 
+ 	DPRINTF(2, "entering %s()\n", __FUNCTION__);
++#if LINUX_VERSION_CODE <= KERNEL_VERSION(2,6,10)
+ #if defined(CONFIG_COMPAT) || defined(CONFIG_SPARC64) || defined(CONFIG_X86_64) || defined(CONFIG_PPC64)
+ 	unregister_ioctl32_conversion(COMPAT_UTIO_GETMSG);
+ 	unregister_ioctl32_conversion(COMPAT_UTIO_PUTMSG);
+@@ -2281,6 +2309,7 @@
+ 	unregister_ioctl32_conversion(UTIO_GETMAJOR);
+ 	unregister_ioctl32_conversion(UTIO_GETDEVID);
+ #endif	/* CONFIG_COMPAT */
++#endif
+ 
+ 	/*
+ 	 * XXX unregister the device
+diff -ru SUNWut.orig/utio/utio.h SUNWut/utio/utio.h
+--- SUNWut.orig/utio/utio.h	2007-08-23 13:15:48.000000000 +0200
++++ SUNWut/utio/utio.h	2007-08-23 13:34:47.000000000 +0200
+@@ -9,7 +9,9 @@
+ 
+ #if defined(CONFIG_COMPAT) || defined(CONFIG_SPARC64) || defined(CONFIG_X86_64) || defined(CONFIG_PPC64)
+ #include <asm/uaccess.h>
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,22)
+ #include <linux/ioctl32.h>
++#endif
+ #include <linux/compat.h>
+ #endif	/* CONFIG_COMPAT */
+ 
