@@ -9,13 +9,17 @@
 #
 # apt-get install fakeroot alien sun-java6-jre pdksh  libldap-2.4-2 ldap-utils tftpd libmotif3 gawk
 
-tmpdir=/var/tmp/srss.$$
-mkdir -p $tmpdir
-source_dir=~/srss_4.0
-echo "Using $tmpdir"
+source_dir=$1
+if [ -z $source_dir ]; then
+    echo "Usage: $0 <srss software source dir>"
+    exit 0
+fi
 
 here=$(dirname $(readlink -f $0))
 
+tmpdir=/var/tmp/srss.$$
+mkdir -p $tmpdir
+echo "Using $tmpdir"
 
 for rpm in $source_dir/{Sun_Ray_*,Docs,Kiosk*}/Linux/Packages/*.rpm; do
     rpm2cpio $rpm|(cd $tmpdir; \
