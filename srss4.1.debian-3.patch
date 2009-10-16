@@ -1,0 +1,106 @@
+diff -ru orig.srss4.1/opt/SUNWut/lib/utadmingid new.srss4.1/opt/SUNWut/lib/utadmingid
+--- orig.srss4.1/opt/SUNWut/lib/utadmingid	2008-09-25 22:24:47.000000000 +0200
++++ new.srss4.1/opt/SUNWut/lib/utadmingid	2009-10-16 16:14:36.000000000 +0200
+@@ -15,7 +15,7 @@
+ ETCDIR="/etc/opt/SUNWut"
+ UTADMINPW=${ETCDIR}/utadmin.pw
+ if [ -f $UTADMINPW ] ; then
+-	WEBGUI_GROUP=`/bin/ls -gn $UTADMINPW | /bin/awk '{print $3}' `
++	WEBGUI_GROUP=`/bin/ls -gn $UTADMINPW | /usr/bin/awk '{print $3}' `
+ fi
+ WEBGUI_GROUP=${WEBGUI_GROUP:-root}
+ print $WEBGUI_GROUP
+Only in new.srss4.1/opt/SUNWut/lib: utadmingid~
+Only in new.srss4.1/opt/SUNWut/lib: .utadmingid.swp
+diff -ru orig.srss4.1/opt/SUNWut/lib/utdmsession new.srss4.1/opt/SUNWut/lib/utdmsession
+--- orig.srss4.1/opt/SUNWut/lib/utdmsession	2008-09-25 22:24:37.000000000 +0200
++++ new.srss4.1/opt/SUNWut/lib/utdmsession	2009-10-16 16:15:28.000000000 +0200
+@@ -23,10 +23,10 @@
+ #	    -z - optional tag for logging purposes
+ #
+ 
+-#exec >/var/tmp/utdmsession.$$ 2>&1       # Debug
+-#set -x
++exec >/var/tmp/utdmsession.$$ 2>&1       # Debug
++set -x
+ 
+-MOD="`/bin/basename $0`"
++MOD="`basename $0`"
+ USAGE="usage: $MOD [-c|-d] Xdisplay [-z tag]"
+ UTMNT_DIRLOCK=".session"
+ 
+Only in new.srss4.1/opt/SUNWut/lib: utdmsession~
+Only in new.srss4.1/opt/SUNWut/lib: .utdmsession.swp
+diff -ru orig.srss4.1/opt/SUNWut/lib/utprodinfo new.srss4.1/opt/SUNWut/lib/utprodinfo
+--- orig.srss4.1/opt/SUNWut/lib/utprodinfo	2008-09-25 22:35:21.000000000 +0200
++++ new.srss4.1/opt/SUNWut/lib/utprodinfo	2009-10-16 16:10:36.000000000 +0200
+@@ -341,7 +341,8 @@
+ 		# found no params, just return
+ 		return 0
+ 	fi
+-	rpm -q --queryformat ${MAPPEDLIST} $PKGNAME 2>/dev/null
++    echo "/opt"
++	#rpm -q --queryformat ${MAPPEDLIST} $PKGNAME 2>/dev/null
+ 	return 0
+ }
+ 
+@@ -356,6 +357,7 @@
+ 	if [[ $# -ne 2 ]]; then
+ 		return 1
+ 	fi
++    return 0
+ 	case $1 in
+ 	"installed")	# package installed, could be either partial or complete
+ 		rpm -q --quiet $2 > /dev/null 2>&1
+diff -ru orig.srss4.1/opt/SUNWut/sbin/utconfig new.srss4.1/opt/SUNWut/sbin/utconfig
+--- orig.srss4.1/opt/SUNWut/sbin/utconfig	2008-09-25 22:24:48.000000000 +0200
++++ new.srss4.1/opt/SUNWut/sbin/utconfig	2009-10-16 16:11:40.000000000 +0200
+@@ -1720,9 +1720,9 @@
+ UT_PROD_NAME="Sun Ray Core Services"
+ UT_VERSION="4.1"
+ 
+-if ! UTInstalled; then
+-  Fatal "$UT_PROD_NAME is not installed on this host"
+-fi
++#if ! UTInstalled; then
++#  Fatal "$UT_PROD_NAME is not installed on this host"
++#fi
+ 
+ UTA_BASEDIR="$(${G_MEDIA_DIR}/utprodinfo -r SUNWuta)/SUNWut"
+ UTO_BASEDIR="$(${G_MEDIA_DIR}/utprodinfo -r SUNWuto)/SUNWut"
+@@ -1752,23 +1752,23 @@
+ SRDS_RN="3.1"
+ SRDS_PACKAGE="SUNWutdso"
+ 
+-if ! SRDSInstalled; then
+-  Fatal "$SRDS_PN is not installed on this host"
+-elif ! SRDSVersion $SRDS_RN; then
+-  Fatal "$SRDS_PN $SRDS_RN is not installed on this host"
+-elif SRDSInstallPartial; then
+-  Fatal "$SRDS_PN $SRDS_RN is only partially installed"
+-fi
++#if ! SRDSInstalled; then
++#  Fatal "$SRDS_PN is not installed on this host"
++#elif ! SRDSVersion $SRDS_RN; then
++#  Fatal "$SRDS_PN $SRDS_RN is not installed on this host"
++#elif SRDSInstallPartial; then
++#  Fatal "$SRDS_PN $SRDS_RN is only partially installed"
++#fi
+ 
+ SRDS_BASEDIR="$(${G_MEDIA_DIR}/utprodinfo -r $SRDS_PACKAGE)/SUNWut"
+ 
+ LCL_PROD_NAME="LDAP Client Libraries"
+ 
+-if ! LdapClientInstalled; then
+-  Fatal "$LCL_PROD_NAME is not installed on this host"
+-elif LdapClientInstallPartial; then
+-  Fatal "$LCL_PROD_NAME is only partially installed"
+-fi
++#if ! LdapClientInstalled; then
++#  Fatal "$LCL_PROD_NAME is not installed on this host"
++#elif LdapClientInstallPartial; then
++#  Fatal "$LCL_PROD_NAME is only partially installed"
++#fi
+ 
+ UT_ROOT_S="Sun Ray root"
+ DEFAULT_ROOTENTRY="o=utdata"
