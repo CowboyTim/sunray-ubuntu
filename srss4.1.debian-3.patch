@@ -1,3 +1,28 @@
+diff -ru orig.srss4.1/opt/SUNWut/lib/dhcp/isc/utdhcpservice new.srss4.1/opt/SUNWut/lib/dhcp/isc/utdhcpservice
+--- orig.srss4.1/opt/SUNWut/lib/dhcp/isc/utdhcpservice	2008-09-25 22:24:49.000000000 +0200
++++ new.srss4.1/opt/SUNWut/lib/dhcp/isc/utdhcpservice	2009-10-16 16:34:13.000000000 +0200
+@@ -95,13 +95,12 @@
+ 
+ function StatusDHCP {
+     typeset PACKAGE="${DHCP_PACKAGE}"
+-    if $DHCP_INSTALLED ; then
+-      # get the actual package name including version and release
+-      PACKAGE="$(rpm -q ${DHCP_PACKAGE} 2> /dev/null)"
+-    fi
+-    if ! $DHCP_RUNNING && [ $DHCP_STATE != "unconfigured" ] ; then
+-      DHCP_STATE="disabled"
+-    fi
++    DHCP_INSTALLED=true
++    DHCP_ENABLED=true
++    DHCP_CONFIGURED=true
++    DHCP_RUNNING=true
++    DHCP_PACKAGE="dhcp3-server"
++    DHCP_STATE="online"
+     print "begin dhcpstate"
+     print "installed=${DHCP_INSTALLED}"
+     print "enabled=${DHCP_ENABLED}"
+Only in new.srss4.1/opt/SUNWut/lib/dhcp/isc: utdhcpservice~
+Only in new.srss4.1/opt/SUNWut/lib/dhcp/isc: .utdhcpservice.swp
 diff -ru orig.srss4.1/opt/SUNWut/lib/utadmingid new.srss4.1/opt/SUNWut/lib/utadmingid
 --- orig.srss4.1/opt/SUNWut/lib/utadmingid	2008-09-25 22:24:47.000000000 +0200
 +++ new.srss4.1/opt/SUNWut/lib/utadmingid	2009-10-16 16:14:36.000000000 +0200
@@ -10,8 +35,6 @@ diff -ru orig.srss4.1/opt/SUNWut/lib/utadmingid new.srss4.1/opt/SUNWut/lib/utadm
  fi
  WEBGUI_GROUP=${WEBGUI_GROUP:-root}
  print $WEBGUI_GROUP
-Only in new.srss4.1/opt/SUNWut/lib: utadmingid~
-Only in new.srss4.1/opt/SUNWut/lib: .utadmingid.swp
 diff -ru orig.srss4.1/opt/SUNWut/lib/utdmsession new.srss4.1/opt/SUNWut/lib/utdmsession
 --- orig.srss4.1/opt/SUNWut/lib/utdmsession	2008-09-25 22:24:37.000000000 +0200
 +++ new.srss4.1/opt/SUNWut/lib/utdmsession	2009-10-16 16:15:28.000000000 +0200
@@ -29,8 +52,6 @@ diff -ru orig.srss4.1/opt/SUNWut/lib/utdmsession new.srss4.1/opt/SUNWut/lib/utdm
  USAGE="usage: $MOD [-c|-d] Xdisplay [-z tag]"
  UTMNT_DIRLOCK=".session"
  
-Only in new.srss4.1/opt/SUNWut/lib: utdmsession~
-Only in new.srss4.1/opt/SUNWut/lib: .utdmsession.swp
 diff -ru orig.srss4.1/opt/SUNWut/lib/utprodinfo new.srss4.1/opt/SUNWut/lib/utprodinfo
 --- orig.srss4.1/opt/SUNWut/lib/utprodinfo	2008-09-25 22:35:21.000000000 +0200
 +++ new.srss4.1/opt/SUNWut/lib/utprodinfo	2009-10-16 16:10:36.000000000 +0200

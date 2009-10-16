@@ -21,7 +21,8 @@ tmpdir=/var/tmp/srss.$$
 mkdir -p $tmpdir
 echo "Using $tmpdir"
 
-for rpm in $source_dir/{Sun_Ray_*,Docs,Kiosk*,GDM*}/Linux/Packages/*.rpm; do
+for rpm in $source_dir/{{Sun_Ray_*,Docs,Kiosk*}/Linux/Packages/*.rpm,GDM*/Linux/Packages/gdm*.x86_64.rpm}; do
+    echo "Unpacking rpm $rpm"
     rpm2cpio $rpm|(cd $tmpdir; \
         cpio --extract \
              --make-directories \
