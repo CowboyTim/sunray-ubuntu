@@ -21,7 +21,7 @@ tmpdir=/var/tmp/srss.$$
 mkdir -p $tmpdir
 echo "Using $tmpdir"
 
-for rpm in $source_dir/{{Sun_Ray_*,Docs,Kiosk*}/Linux/Packages/*.rpm,GDM*/Linux/Packages/gdm*.x86_64.rpm}; do
+for rpm in $source_dir/{Sun_Ray_*,Docs,Kiosk*}/Linux/Packages/*.rpm; do
     echo "Unpacking rpm $rpm"
     rpm2cpio $rpm|(cd $tmpdir; \
         cpio --extract \
@@ -95,10 +95,10 @@ mkdir -p $tmpdir/etc/X11/xdm
 mkdir -p $tmpdir/etc/gdm
 cat > $tmpdir/etc/gdm/gdm.conf-custom << EOF
 [daemon]
-PostLoginScriptDir=/etc/X11/gdm/SunRayPostLogin/
-PreSessionScriptDir=/etc/X11/gdm/SunRayPreSession/
-PostSessionScriptDir=/etc/X11/gdm/SunRayPostSession/
-DisplayInitDir=/etc/X11/gdm/SunRayInit
+PostLoginScriptDir=/etc/opt/SUNWut/gdm//SunRayPostLogin/
+PreSessionScriptDir=/etc/opt/SUNWut/gdm//SunRayPreSession/
+PostSessionScriptDir=/etc/opt/SUNWut/gdm//SunRayPostSession/
+DisplayInitDir=/etc/opt/SUNWut/gdm//SunRayInit
 RebootCommand=/bin/false
 HaltCommand=/bin/false
 SuspendCommand=/bin/false
@@ -116,6 +116,7 @@ SystemMenu=false
 SoundOnLogin=false
 ChooserButton=false
 Browser=false
+Greeter=/usr/lib/gdm/gdmlogin
 
 [debug]
 Enable=true
@@ -282,18 +283,18 @@ EOca
 chmod +x $tmpdir/etc/X11/gdm/SunRayInit/helpers/xset
 
 
-echo "Fixing Xnewt..."
-mv $tmpdir/opt/SUNWut/lib/Xnewt $tmpdir/opt/SUNWut/lib/Xnewt.sun
-cat > $tmpdir/opt/SUNWut/lib/Xnewt <<EO
-#!/bin/bash
-# add -kb as option in case no sane keyboard... +kb if you want the XKEYBOARD
-# extention for all Xnewt's. This can be set by the utxconfig program in
-# /opt/SUNWut/bin for each session if needed (enable or disable).
-#
-#  -Tim
-exec /opt/SUNWut/lib/Xnewt.sun \$@ -fp /usr/share/fonts/X11/misc
-EO
-chmod +x $tmpdir/opt/SUNWut/lib/Xnewt
+#echo "Fixing Xnewt..."
+#mv $tmpdir/opt/SUNWut/lib/Xnewt $tmpdir/opt/SUNWut/lib/Xnewt.sun
+#cat > $tmpdir/opt/SUNWut/lib/Xnewt <<EO
+##!/bin/bash
+## add -kb as option in case no sane keyboard... +kb if you want the XKEYBOARD
+## extention for all Xnewt's. This can be set by the utxconfig program in
+## /opt/SUNWut/bin for each session if needed (enable or disable).
+##
+##  -Tim
+#exec /opt/SUNWut/lib/Xnewt.sun \$@ -fp /usr/share/fonts/X11/misc
+#EO
+#chmod +x $tmpdir/opt/SUNWut/lib/Xnewt
 
 echo "Making tar..."
 cd $tmpdir
