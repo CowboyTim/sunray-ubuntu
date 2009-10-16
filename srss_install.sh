@@ -37,6 +37,7 @@ done
 )
 
 for extra_pkg in $tmpdir/{libgdbm3_1.8.3-3_i386,libmotif3_2.2.3-2_i386,libglib1.2ldbl_1.2.10-19build1_i386}.deb; do
+    echo  "Adding $extra_pkg"
     pkg_tmpdir=/var/tmp/pkg_tmp_dir
     mkdir -p $pkg_tmpdir
     cd $pkg_tmpdir
@@ -65,10 +66,10 @@ mv $tmpdir/usr/jre1.5.0_11 $tmpdir/usr/j2se
 rm $tmpdir/usr/jre-1_5_0_11-linux-i586.bin
 #ln -s /usr/lib/jvm/java-6-sun/jre $tmpdir/etc/opt/SUNWut/jre
 
+echo  "Add zsunray-init script to configure sunray software running from init"
 cp $here/zsunray-init $tmpdir/etc/init.d
 chmod +x $tmpdir/etc/init.d/zsunray-init
 
-# Create Sun Ray settings Menu item
 echo "Adding Sun Ray Settings menu utem..."
 mkdir -p $tmpdir/usr/share/applications
 cat > $tmpdir/usr/share/applications/sunray-settings.desktop << EOF
@@ -128,10 +129,6 @@ flexible=true
 AllowGtkThemeChange=false
 EOF
 
-echo "Patching..."
-cd $tmpdir/opt/SUNWut
-patch -p3 < $here/srss4.0.debian-3.patch
-
 cat > $tmpdir/opt/SUNWut/lib/utctl.d/profiles/default <<EO
 #
 # ident "@(#)default-profile.src        1.6     06/08/23 SMI"
@@ -149,28 +146,37 @@ cron
 #compatlinks
 EO
 
-echo "Patching modules..."
+
+echo "Patching... SunRay /opt/SUNWut software"
+cd $tmpdir/opt/SUNWut
+#patch -p3 < $here/srss4.0.debian-3.patch
+patch -p3 < $here/sray41-debian.patch.2008-10-30
+
+echo "Patching kernel modules..."
 cd $tmpdir/usr/src/SUNWut
 #patch -p2 < $here/srss4.0.debian-modules-4.patch
 #patch -p1 < $here/modules-4.0-2.diff
-patch -p1 < $here/Patch-modules-SRSS4-0907.txt
-patch -p1 < $here/Patch-modules-SRSS4-0907-phase2.txt
+#patch -p1 < $here/Patch-modules-SRSS4-0907.txt
+#patch -p1 < $here/Patch-modules-SRSS4-0907-phase2.txt
+patch -p1 < $here/modules-4.1beta.diff
+patch -p1 < $here/tims_patch.diff
 cd $tmpdir/usr
 for module_dir in src/SUNWut/*; do
     echo "Build module $module_dir..."
-    (
-        cd $module_dir
-        make clean 
-        make 
-        if [ $? -eq 0 ]; then
-                VERSION=$(uname -r)
-                mkdir -p $tmpdir/lib/modules/$VERSION/misc
-                cp -R *.ko $tmpdir/lib/modules/$VERSION/misc || exit 1
-                make clean
-        else
-            exit 1
-        fi
-    ) || exit 1
+    for V in `ls /usr/src|grep 'linux-headers'`; do
+        V=$(basename $V|sed s/linux-headers-//g)
+        (
+            cd $module_dir
+            echo $module_dir, $V
+            make clean 
+            VERSION=$V make
+            if [ $? -eq 0 ]; then
+                    mkdir -p $tmpdir/lib/modules/$V/misc
+                    cp -R *.ko $tmpdir/lib/modules/$V/misc || exit 1
+                    make clean
+            fi
+        )
+    done
 done
 
 echo "Making empty dirs..."
@@ -214,7 +220,7 @@ ln -s /usr/bin/xkbcomp $tmpdir/opt/SUNWut/lib/xkb/xkbcomp
 mkdir -p $tmpdir/srv/tftp
 ln -s /srv/tftp $tmpdir/tftpboot
 
-# Audio setup
+echo "Audio setup/fixes..."
 mkdir -p $tmpdir/etc/X11/Xsession.d
 cat > $tmpdir/etc/X11/Xsession.d/10SUNWut <<EOs
 set +e
@@ -259,7 +265,7 @@ unset AUDIODEV
 set -e
 EOs
 
-# power saving options
+echo "Setting saving options..."
 mkdir -p $tmpdir/etc/X11/gdm/SunRayInit/helpers
 cat > $tmpdir/etc/X11/gdm/SunRayInit/helpers/xset <<EOca
 #!/bin/bash
@@ -274,18 +280,18 @@ EOca
 chmod +x $tmpdir/etc/X11/gdm/SunRayInit/helpers/xset
 
 
-echo "Fixing Xnewt..."
-mv $tmpdir/usr/X11R6/bin/Xnewt $tmpdir/usr/X11R6/bin/Xnewt.sun
-cat > $tmpdir/usr/X11R6/bin/Xnewt <<EO
-#!/bin/bash
-# add -kb as option in case no sane keyboard... +kb if you want the XKEYBOARD
-# extention for all Xnewt's. This can be set by the utxconfig program in
-# /opt/SUNWut/bin for each session if needed (enable or disable).
-#
-#  -Tim
-exec /usr/X11R6/bin/Xnewt.sun \$@ -fp /usr/share/fonts/X11/misc
-EO
-chmod +x $tmpdir/usr/X11R6/bin/Xnewt
+##echo "Fixing Xnewt..."
+##mv $tmpdir/usr/X11R6/bin/Xnewt $tmpdir/usr/X11R6/bin/Xnewt.sun
+##cat > $tmpdir/usr/X11R6/bin/Xnewt <<EO
+###!/bin/bash
+### add -kb as option in case no sane keyboard... +kb if you want the XKEYBOARD
+### extention for all Xnewt's. This can be set by the utxconfig program in
+### /opt/SUNWut/bin for each session if needed (enable or disable).
+###
+###  -Tim
+##exec /usr/X11R6/bin/Xnewt.sun \$@ -fp /usr/share/fonts/X11/misc
+##EO
+##chmod +x $tmpdir/usr/X11R6/bin/Xnewt
 
 echo "Making tar..."
 cd $tmpdir

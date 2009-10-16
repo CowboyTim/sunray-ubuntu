@@ -1,0 +1,196 @@
+diff -ru SUNWut.orig/utadem/Makefile SUNWut/utadem/Makefile
+--- SUNWut.orig/utadem/Makefile	2008-06-18 23:54:04.000000000 +0200
++++ SUNWut/utadem/Makefile	2008-10-06 10:32:54.000000000 +0200
+@@ -23,16 +23,16 @@
+ 
+ COBJ = $(C_FILES:%.c=%.o)
+ 
+-CFLAGS += -Wstrict-prototypes
+-CFLAGS += -O
+-CFLAGS += -fno-strict-aliasing
+-CFLAGS += -mpreferred-stack-boundary=4
+-#CFLAGS += -march=`uname -m`
+-CFLAGS += -falign-functions=4
+-CFLAGS += -D_SCCSID
+-CFLAGS += -Wall
+-CFLAGS += -Wno-unknown-pragmas
+-CFLAGS += -DUTDEBUG
++EXTRA_CFLAGS += -Wstrict-prototypes
++EXTRA_CFLAGS += -O
++EXTRA_CFLAGS += -fno-strict-aliasing
++EXTRA_CFLAGS += -mpreferred-stack-boundary=4
++#EXTRA_CFLAGS += -march=`uname -m`
++EXTRA_CFLAGS += -falign-functions=4
++EXTRA_CFLAGS += -D_SCCSID
++EXTRA_CFLAGS += -Wall
++EXTRA_CFLAGS += -Wno-unknown-pragmas
++EXTRA_CFLAGS += -DUTDEBUG
+ 
+ obj-m := $(COBJ)
+ 
+diff -ru SUNWut.orig/utadem/utadem.h SUNWut/utadem/utadem.h
+--- SUNWut.orig/utadem/utadem.h	2008-06-18 23:54:05.000000000 +0200
++++ SUNWut/utadem/utadem.h	2008-10-06 10:36:15.000000000 +0200
+@@ -14,7 +14,6 @@
+ 
+ #if defined(CONFIG_COMPAT) || defined(CONFIG_SPARC64) || defined(CONFIG_X86_64) || defined(CONFIG_PPC64)
+ #include <asm/uaccess.h>
+-#include <linux/ioctl32.h>
+ #include <linux/compat.h>
+ #endif	/* CONFIG_COMPAT */
+ 
+diff -ru SUNWut.orig/utdisk/Makefile SUNWut/utdisk/Makefile
+--- SUNWut.orig/utdisk/Makefile	2008-06-18 23:54:09.000000000 +0200
++++ SUNWut/utdisk/Makefile	2008-10-06 10:35:44.000000000 +0200
+@@ -25,13 +25,13 @@
+ 
+ COBJ = $(C_FILES:%.c=%.o)
+ 
+-CFLAGS += -Wstrict-prototypes
+-CFLAGS += -O
+-CFLAGS += -fno-strict-aliasing
+-CFLAGS += -mpreferred-stack-boundary=4
+-CFLAGS += -falign-functions=4
+-CFLAGS += -Wall
+-#CFLAGS += -DUTDEBUG
++EXTRA_CFLAGS += -Wstrict-prototypes
++EXTRA_CFLAGS += -O
++EXTRA_CFLAGS += -fno-strict-aliasing
++EXTRA_CFLAGS += -mpreferred-stack-boundary=4
++EXTRA_CFLAGS += -falign-functions=4
++EXTRA_CFLAGS += -Wall
++#EXTRA_CFLAGS += -DUTDEBUG
+ 
+ obj-m := $(COBJ)
+ 
+diff -ru SUNWut.orig/utdisk/utdisk.c SUNWut/utdisk/utdisk.c
+--- SUNWut.orig/utdisk/utdisk.c	2008-06-18 23:54:09.000000000 +0200
++++ SUNWut/utdisk/utdisk.c	2008-10-06 10:43:07.000000000 +0200
+@@ -627,14 +627,14 @@
+ 		|| ((dsp = gdp->private_data) == NULL)
+ 		|| (utvalidate_dsp(dsp) == 0)) {
+ 		utprintf("%s: bad argument\n", __FUNCTION__);
+-		bio_endio(biop, biop->bi_size, (-EINVAL));
++		bio_endio(biop, (-EINVAL));
+ 		return (0);
+ 	}
+ 	/* is transfer size a multiple of hardware block size */
+ 	if ((biop->bi_size % UTDISK_HARDSECT_SIZE_BYTES) != 0) {
+ 		utprintf("%s: length %x not a block size multiple\n",
+ 			__FUNCTION__, biop->bi_size);
+-		bio_endio(biop, biop->bi_size, (-EINVAL));
++		bio_endio(biop, (-EINVAL));
+ 		return (0);
+ 	}
+ 	if (down_interruptible(&(dsp->lock)) == 0) {
+@@ -642,13 +642,13 @@
+ 			utprintf("%s: stale device %d\n", __FUNCTION__,
+ 								dsp->ctlmin);
+ 			up(&(dsp->lock));
+-			bio_endio(biop, biop->bi_size, (-ENXIO));
++			bio_endio(biop, (-ENXIO));
+ 			return (0);
+ 		}
+ 		up(&(dsp->lock));
+ 	} else {
+ 		utprintf("%s: locking interrupted\n", __FUNCTION__);
+-		bio_endio(biop, biop->bi_size, (-EIO));
++		bio_endio(biop, (-EIO));
+ 		return (0);
+ 	}
+ 
+@@ -666,7 +666,7 @@
+ 	if (utstk_add_bio(biop, dsp) != 0) {
+ 		utprintf("%s: [%d] add buf failed\n", __FUNCTION__,
+ 								dsp->ctlmin);
+-		bio_endio(biop, biop->bi_size, (-EIO));
++		bio_endio(biop, (-EIO));
+ 		return (0);
+ 	}
+ 
+diff -ru SUNWut.orig/utdisk/utdiskctl.c SUNWut/utdisk/utdiskctl.c
+--- SUNWut.orig/utdisk/utdiskctl.c	2008-06-18 23:54:09.000000000 +0200
++++ SUNWut/utdisk/utdiskctl.c	2008-10-06 10:44:23.000000000 +0200
+@@ -1420,10 +1420,10 @@
+ 			utprintf("%s[%d]: IO error on bio=%p, size=%d, resid=%d\n",
+ 				__FUNCTION__, dsp->ctlmin, real_biop,
+ 				real_biop->bi_size, tx->resid);
+-			bio_endio(real_biop, real_biop->bi_size, (-EIO));
++			bio_endio(real_biop, (-EIO));
+ 		} else {
+ 			/* success */
+-			bio_endio(real_biop, (real_biop->bi_size - tx->resid), 0);
++			bio_endio(real_biop, 0);
+ 		}
+ 	} else {
+ 		/*
+@@ -2277,7 +2277,7 @@
+ 		if (real_biop != NULL) {
+ 			utprintf("%s[%d]: releasing original bio %p\n",
+ 				__FUNCTION__, dsp->ctlmin, real_biop);
+-			bio_endio(real_biop, real_biop->bi_size, (-ENXIO));
++			bio_endio(real_biop, (-ENXIO));
+ 		}
+ 	}
+ 	if ((dsp->flags & UTDISK_STATE_OPEN) || (dsp->opens != 0)) {
+diff -ru SUNWut.orig/utdisk/utdiskctl.h SUNWut/utdisk/utdiskctl.h
+--- SUNWut.orig/utdisk/utdiskctl.h	2008-06-18 23:54:09.000000000 +0200
++++ SUNWut/utdisk/utdiskctl.h	2008-10-06 10:39:40.000000000 +0200
+@@ -25,10 +25,15 @@
+ #include <linux/ioctl.h>
+ #if defined(CONFIG_COMPAT) || defined(CONFIG_SPARC64) || defined(CONFIG_X86_64) || defined(CONFIG_PPC64)
+ #include <asm/uaccess.h>
+-#include <linux/ioctl32.h>
+ #include <linux/compat.h>
+ #endif	/* CONFIG_COMPAT */
+ 
++#if defined(CONFIG_SPARC64) || defined(CONFIG_X86_64) || defined(CONFIG_PPC64)
++#define __WORDSIZE 64
++#else
++#define __WORDSIZE 32
++#endif
++
+ /* macro and constant definitions */
+ #ifndef __WORDSIZE
+ #error __WORDSIZE not defined
+diff -ru SUNWut.orig/utio/Makefile SUNWut/utio/Makefile
+--- SUNWut.orig/utio/Makefile	2008-06-18 23:54:07.000000000 +0200
++++ SUNWut/utio/Makefile	2008-10-06 10:35:17.000000000 +0200
+@@ -23,16 +23,16 @@
+ 
+ COBJ = $(C_FILES:%.c=%.o)
+ 
+-CFLAGS += -Wstrict-prototypes
+-CFLAGS += -O
+-CFLAGS += -fno-strict-aliasing
+-CFLAGS += -mpreferred-stack-boundary=4
+-#CFLAGS += -march=`uname -m`
+-CFLAGS += -falign-functions=4
+-CFLAGS += -D_SCCSID
+-CFLAGS += -Wall
+-CFLAGS += -Wno-unknown-pragmas
+-CFLAGS += -DUTDEBUG
++EXTRA_CFLAGS += -Wstrict-prototypes
++EXTRA_CFLAGS += -O
++EXTRA_CFLAGS += -fno-strict-aliasing
++EXTRA_CFLAGS += -mpreferred-stack-boundary=4
++#EXTRA_CFLAGS += -march=`uname -m`
++EXTRA_CFLAGS += -falign-functions=4
++EXTRA_CFLAGS += -D_SCCSID
++EXTRA_CFLAGS += -Wall
++EXTRA_CFLAGS += -Wno-unknown-pragmas
++EXTRA_CFLAGS += -DUTDEBUG
+ 
+ obj-m := $(COBJ)
+ 
+diff -ru SUNWut.orig/utio/utio.h SUNWut/utio/utio.h
+--- SUNWut.orig/utio/utio.h	2008-06-18 23:54:07.000000000 +0200
++++ SUNWut/utio/utio.h	2008-10-06 10:37:10.000000000 +0200
+@@ -9,7 +9,6 @@
+ 
+ #if defined(CONFIG_COMPAT) || defined(CONFIG_SPARC64) || defined(CONFIG_X86_64) || defined(CONFIG_PPC64)
+ #include <asm/uaccess.h>
+-#include <linux/ioctl32.h>
+ #include <linux/compat.h>
+ #endif	/* CONFIG_COMPAT */
+ 
