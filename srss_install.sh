@@ -14,6 +14,8 @@ mkdir -p $tmpdir
 source_dir=~/srss_4.0
 echo "Using $tmpdir"
 
+here=$(dirname $(readlink -f $0))
+
 
 for rpm in $source_dir/{Sun_Ray_*,Docs,Kiosk*}/Linux/Packages/*.rpm; do
     rpm2cpio $rpm|(cd $tmpdir; \
@@ -59,7 +61,7 @@ mv $tmpdir/usr/jre1.5.0_11 $tmpdir/usr/j2se
 rm $tmpdir/usr/jre-1_5_0_11-linux-i586.bin
 #ln -s /usr/lib/jvm/java-6-sun/jre $tmpdir/etc/opt/SUNWut/jre
 
-cp ~/zsunray-init $tmpdir/etc/init.d
+cp $here/zsunray-init $tmpdir/etc/init.d
 chmod +x $tmpdir/etc/init.d/zsunray-init
 
 # Create Sun Ray settings Menu item
@@ -124,7 +126,7 @@ EOF
 
 echo "Patching..."
 cd $tmpdir/opt/SUNWut
-patch -p3 < ~/srss4.0.debian-3.patch
+patch -p3 < $here/srss4.0.debian-3.patch
 
 cat > $tmpdir/opt/SUNWut/lib/utctl.d/profiles/default <<EO
 #
@@ -145,10 +147,10 @@ EO
 
 echo "Patching modules..."
 cd $tmpdir/usr/src/SUNWut
-#patch -p2 < ~/srss4.0.debian-modules-4.patch
-#patch -p1 < ~/modules-4.0-2.diff
-patch -p1 < ~/Patch-modules-SRSS4-0907.txt
-patch -p1 < ~/Patch-modules-SRSS4-0907-phase2.txt
+#patch -p2 < $here/srss4.0.debian-modules-4.patch
+#patch -p1 < $here/modules-4.0-2.diff
+patch -p1 < $here/Patch-modules-SRSS4-0907.txt
+patch -p1 < $here/Patch-modules-SRSS4-0907-phase2.txt
 cd $tmpdir/usr
 for module_dir in src/SUNWut/*; do
     echo "Build module $module_dir..."
