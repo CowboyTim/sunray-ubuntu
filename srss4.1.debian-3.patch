@@ -52,6 +52,25 @@ diff -ru orig.srss4.1/opt/SUNWut/lib/utdmsession new.srss4.1/opt/SUNWut/lib/utdm
  USAGE="usage: $MOD [-c|-d] Xdisplay [-z tag]"
  UTMNT_DIRLOCK=".session"
  
+diff -ru orig.srss4.1/opt/SUNWut/lib/utgdmconfigpath new.srss4.1/opt/SUNWut/lib/utgdmconfigpath
+--- orig.srss4.1/opt/SUNWut/lib/utgdmconfigpath	2008-09-25 22:24:42.000000000 +0200
++++ new.srss4.1/opt/SUNWut/lib/utgdmconfigpath	2009-10-16 18:42:22.000000000 +0200
+@@ -12,10 +12,10 @@
+ else
+     GDM_PATH=`rpm -ql "gdm" | grep "custom.conf"`
+     if [ $? != 0 ]; then
+-	print -u2 "Cannot determine GDM install directory"
+-	exit 1;
++        GDM_DIR=/etc/gdm/
++    else
++        GDM_DIR=${GDM_PATH%%custom\.conf*}
+     fi
+-    GDM_DIR=${GDM_PATH%%custom\.conf*}
+ fi
+ print $GDM_DIR
+ exit 0
+Only in new.srss4.1/opt/SUNWut/lib: utgdmconfigpath~
+Only in new.srss4.1/opt/SUNWut/lib: .utgdmconfigpath.swp
 diff -ru orig.srss4.1/opt/SUNWut/lib/utprodinfo new.srss4.1/opt/SUNWut/lib/utprodinfo
 --- orig.srss4.1/opt/SUNWut/lib/utprodinfo	2008-09-25 22:35:21.000000000 +0200
 +++ new.srss4.1/opt/SUNWut/lib/utprodinfo	2009-10-16 16:10:36.000000000 +0200
