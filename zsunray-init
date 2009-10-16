@@ -13,6 +13,10 @@ case "$1" in
     gconftool-2 --direct --config-source xml:readwrite:/etc/gconf/gconf.xml.mandatory --type bool --set /apps/gnome_settings_daemon/plugins/keyboard false
     gconftool-2 --direct --config-source xml:readwrite:/etc/gconf/gconf.xml.mandatory --type string --set /apps/gnome-screensaver/mode blank-only
 
+    mkdir -p /tmp/SUNWut/config/xconfig/
+    touch /tmp/SUNWut/config/xconfig/config.lock
+    touch /tmp/SUNWut/config/xconfig/Xservers
+    touch /tmp/SUNWut/config/xconfig/Xconfig
 
     /etc/init.d/openbsd-inetd start
 	/etc/init.d/gdm restart

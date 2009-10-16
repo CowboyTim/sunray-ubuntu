@@ -21,7 +21,7 @@ tmpdir=/var/tmp/srss.$$
 mkdir -p $tmpdir
 echo "Using $tmpdir"
 
-for rpm in $source_dir/{Sun_Ray_*,Docs,Kiosk*}/Linux/Packages/*.rpm; do
+for rpm in $source_dir/{Sun_Ray_*,Docs,Kiosk*,GDM*}/Linux/Packages/*.rpm; do
     rpm2cpio $rpm|(cd $tmpdir; \
         cpio --extract \
              --make-directories \
@@ -34,9 +34,11 @@ done
     wget http://fr.archive.ubuntu.com/ubuntu/pool/main/g/gdbm/libgdbm3_1.8.3-3_i386.deb
     wget http://fr.archive.ubuntu.com/ubuntu/pool/multiverse/o/openmotif/libmotif3_2.2.3-2_i386.deb
     wget http://fr.archive.ubuntu.com/ubuntu/pool/universe/g/glib1.2/libglib1.2ldbl_1.2.10-19build1_i386.deb
+    wget http://fr.archive.ubuntu.com/ubuntu/pool/main/libx/libxfont/libxfont1_1.3.1-2_i386.deb
+    wget http://fr.archive.ubuntu.com/ubuntu/pool/main/libf/libfontenc/libfontenc1_1.0.4-3_i386.deb
 )
 
-for extra_pkg in $tmpdir/{libgdbm3_1.8.3-3_i386,libmotif3_2.2.3-2_i386,libglib1.2ldbl_1.2.10-19build1_i386}.deb; do
+for extra_pkg in $tmpdir/{libgdbm3_1.8.3-3_i386,libmotif3_2.2.3-2_i386,libglib1.2ldbl_1.2.10-19build1_i386,libxfont1_1.3.1-2_i386,libfontenc1_1.0.4-3_i386}.deb; do
     echo  "Adding $extra_pkg"
     pkg_tmpdir=/var/tmp/pkg_tmp_dir
     mkdir -p $pkg_tmpdir
@@ -149,8 +151,7 @@ EO
 
 echo "Patching... SunRay /opt/SUNWut software"
 cd $tmpdir/opt/SUNWut
-#patch -p3 < $here/srss4.0.debian-3.patch
-patch -p3 < $here/sray41-debian.patch.2008-10-30
+patch -p3 < $here/srss4.1.debian-3.patch
 
 echo "Patching kernel modules..."
 cd $tmpdir/usr/src/SUNWut
@@ -280,18 +281,18 @@ EOca
 chmod +x $tmpdir/etc/X11/gdm/SunRayInit/helpers/xset
 
 
-##echo "Fixing Xnewt..."
-##mv $tmpdir/usr/X11R6/bin/Xnewt $tmpdir/usr/X11R6/bin/Xnewt.sun
-##cat > $tmpdir/usr/X11R6/bin/Xnewt <<EO
-###!/bin/bash
-### add -kb as option in case no sane keyboard... +kb if you want the XKEYBOARD
-### extention for all Xnewt's. This can be set by the utxconfig program in
-### /opt/SUNWut/bin for each session if needed (enable or disable).
-###
-###  -Tim
-##exec /usr/X11R6/bin/Xnewt.sun \$@ -fp /usr/share/fonts/X11/misc
-##EO
-##chmod +x $tmpdir/usr/X11R6/bin/Xnewt
+echo "Fixing Xnewt..."
+mv $tmpdir/opt/SUNWut/lib/Xnewt $tmpdir/opt/SUNWut/lib/Xnewt.sun
+cat > $tmpdir/opt/SUNWut/lib/Xnewt <<EO
+#!/bin/bash
+# add -kb as option in case no sane keyboard... +kb if you want the XKEYBOARD
+# extention for all Xnewt's. This can be set by the utxconfig program in
+# /opt/SUNWut/bin for each session if needed (enable or disable).
+#
+#  -Tim
+exec /opt/SUNWut/lib/Xnewt.sun \$@ -fp /usr/share/fonts/X11/misc
+EO
+chmod +x $tmpdir/opt/SUNWut/lib/Xnewt
 
 echo "Making tar..."
 cd $tmpdir
