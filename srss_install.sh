@@ -269,8 +269,8 @@ set -e
 EOs
 
 echo "Setting saving options..."
-mkdir -p $tmpdir/etc/X11/gdm/SunRayInit/helpers
-cat > $tmpdir/etc/X11/gdm/SunRayInit/helpers/xset <<EOca
+mkdir -p $tmpdir/etc/opt/SUNWut/gdm//SunRayInit/helpers
+cat > $tmpdir/etc/opt/SUNWut/gdm//SunRayInit/helpers/xset <<EOca
 #!/bin/bash
 xset s 600 0
 xset s blank
@@ -280,7 +280,7 @@ xset -b
 
 exit 0
 EOca
-chmod +x $tmpdir/etc/X11/gdm/SunRayInit/helpers/xset
+chmod +x $tmpdir/etc/opt/SUNWut/gdm//SunRayInit/helpers/xset
 
 
 #echo "Fixing Xnewt..."
