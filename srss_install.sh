@@ -15,6 +15,7 @@
 # 4. configure the sunray software:
 #     /opt/SUNWut/sbin/utconfig
 #     /opt/SUNWut/sbin/utadm -L on
+#     /opt/SUNWut/sbin/utfwadm -A -f /opt/SUNWut/lib/firmware_gui  -V -a
 #     /opt/SUNWut/sbin/utrestart
 #     /etc/init.d/zsunray-init stop
 #     /etc/init.d/zsunray-init start
@@ -32,6 +33,8 @@ tmpdir=/var/tmp/srss.$$
 mkdir -p $tmpdir
 echo "Using $tmpdir"
 
+baseurl=http://fr.archive.ubuntu.com/ubuntu/pool/
+
 for rpm in $source_dir/{Sun_Ray_*,Docs,Kiosk*}/Linux/Packages/*.rpm; do
     echo "Unpacking rpm $rpm"
     rpm2cpio $rpm|(cd $tmpdir; \
@@ -43,11 +46,11 @@ done
 
 (
     cd $tmpdir
-    wget http://fr.archive.ubuntu.com/ubuntu/pool/main/g/gdbm/libgdbm3_1.8.3-3_i386.deb
-    wget http://fr.archive.ubuntu.com/ubuntu/pool/multiverse/o/openmotif/libmotif3_2.2.3-2_i386.deb
-    wget http://fr.archive.ubuntu.com/ubuntu/pool/universe/g/glib1.2/libglib1.2ldbl_1.2.10-19build1_i386.deb
-    wget http://fr.archive.ubuntu.com/ubuntu/pool/main/libx/libxfont/libxfont1_1.3.1-2_i386.deb
-    wget http://fr.archive.ubuntu.com/ubuntu/pool/main/libf/libfontenc/libfontenc1_1.0.4-3_i386.deb
+    wget $baseurl/main/g/gdbm/libgdbm3_1.8.3-3_i386.deb
+    wget $baseurl/multiverse/o/openmotif/libmotif3_2.2.3-2_i386.deb
+    wget $baseurl/universe/g/glib1.2/libglib1.2ldbl_1.2.10-19build1_i386.deb
+    wget $baseurl/main/libx/libxfont/libxfont1_1.3.1-2_i386.deb
+    wget $baseurl/main/libf/libfontenc/libfontenc1_1.0.4-3_i386.deb
 )
 
 for extra_pkg in $tmpdir/{libgdbm3_1.8.3-3_i386,libmotif3_2.2.3-2_i386,libglib1.2ldbl_1.2.10-19build1_i386,libxfont1_1.3.1-2_i386,libfontenc1_1.0.4-3_i386}.deb; do
@@ -86,43 +89,14 @@ chmod +x $tmpdir/etc/init.d/zsunray-init
 
 echo "Adding Sun Ray Settings menu utem..."
 mkdir -p $tmpdir/usr/share/applications
-cat > $tmpdir/usr/share/applications/sunray-settings.desktop << EOF
-[Desktop Entry]
-Encoding=UTF-8
-Name=SunRay Settings
-Comment=Adjust audio and video properties
-Exec=/opt/SUNWut/bin/utsettings
-Icon=gdm-setup.png
-Terminal=false
-Type=Application
-Categories=Application;AudioVideo;
-StartupNotify=false
-EOF
-chmod 644 $tmpdir/usr/share/applications/sunray-settings.desktop
+cp $here/sunray-settings.desktop $tmpdir/usr/share/applications/sunray-settings.desktop
 
 # Setup GDM settings.
 echo "Configuring GDM..."
-mkdir -p $tmpdir/etc/X11/xdm
 mkdir -p $tmpdir/etc/gdm
 cp $here/gdm.conf-custom $tmpdir/etc/gdm/gdm.conf-custom 
 
-cat > $tmpdir/opt/SUNWut/lib/utctl.d/profiles/default <<EO
-#
-# ident "@(#)default-profile.src        1.6     06/08/23 SMI"
-#
-# Copyright 2006 Sun Microsystems, Inc.  All rights reserved.
-# Use is subject to license terms.
-#
-#
-
-#lib64
-jre
-syslog
-cron
-#pam
-#compatlinks
-EO
-
+cp $here/default $tmpdir/opt/SUNWut/lib/utctl.d/profiles/default
 
 echo "Patching... SunRay /opt/SUNWut software"
 cd $tmpdir/opt/SUNWut
@@ -165,7 +139,7 @@ mkdir -p $tmpdir/opt/SUNWut/lib/xkb/compiled
 echo "Fixing xkb stuff..."
 (
     cd $tmpdir
-    wget http://fr.archive.ubuntu.com/ubuntu/pool/universe/x/xkb-data-legacy/xkb-data-legacy_1.0.1-4_all.deb
+    wget $baseurl/universe/x/xkb-data-legacy/xkb-data-legacy_1.0.1-4_all.deb
     for extra_pkg in $tmpdir/xkb-data-legacy_1.0.1-4_all.deb; do
         pkg_tmpdir=/var/tmp/pkg_tmp_dir
         mkdir -p $pkg_tmpdir
@@ -198,62 +172,11 @@ ln -s /srv/tftp $tmpdir/tftpboot
 
 echo "Audio setup/fixes..."
 mkdir -p $tmpdir/etc/X11/Xsession.d
-cat > $tmpdir/etc/X11/Xsession.d/10SUNWut <<EOs
-set +e
-if [ -x /etc/opt/SUNWut/xinitrc.d/0010.SUNWut.xdmEnv ]; then
-        . /etc/opt/SUNWut/xinitrc.d/0010.SUNWut.xdmEnv
-fi
-
-if [ -x /etc/opt/SUNWut/xinitrc.d/0100.SUNWut ]; then
-#       SUN_SUNRAY_UTXLOCK_PREF=
-#       export SUN_SUNRAY_UTXLOCK_PREF
-        . /etc/opt/SUNWut/xinitrc.d/0100.SUNWut
-fi
-
-
-if [ ! -d \$HOME/.pulse ] ; then
-        mkdir \$HOME/.pulse
-fi
-
-pkill -u \`id -u\` pulseaudio
-
-cat > \$HOME/.pulse/default.pa <<EOcat
-load-module module-oss device=\$UTAUDIODEV playback=1 record=1 fragment_size=8192
-load-module module-native-protocol-unix
-load-module module-esound-protocol-unix
-#load-module module-esound-protocol-tcp auth-ip-acl=127.0.0.1
-EOcat
-
-# create asoundrc for pulseaudio redirection
-cat > \$HOME/.asoundrc <<EOcat
-pcm.!default {
-  type pulse
-}
-ctl.!default {
-  type pulse
-}
-EOcat
-
-# start pulseaudio deamon
-pulseaudio -D
-
-unset AUDIODEV
-
-set -e
-EOs
+cp $here/10SUNWut $tmpdir/etc/X11/Xsession.d/10SUNWut
 
 echo "Setting saving options..."
 mkdir -p $tmpdir/etc/opt/SUNWut/gdm//SunRayInit/helpers
-cat > $tmpdir/etc/opt/SUNWut/gdm//SunRayInit/helpers/xset <<EOca
-#!/bin/bash
-xset s 600 0
-xset s blank
-xset dpms 600 600 600
-xset r rate 200 100
-xset -b
-
-exit 0
-EOca
+cp $here/xset $tmpdir/etc/opt/SUNWut/gdm//SunRayInit/helpers/xset
 chmod +x $tmpdir/etc/opt/SUNWut/gdm//SunRayInit/helpers/xset
 
 echo "Xnewt needs at least 1 font, in one fontpath"

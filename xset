@@ -1,0 +1,8 @@
+#!/bin/bash
+xset s 600 0
+xset s blank
+xset dpms 600 600 600
+xset r rate 200 100
+xset -b
+
+exit 0
