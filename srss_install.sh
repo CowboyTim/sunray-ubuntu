@@ -15,6 +15,7 @@
 # 4. configure the sunray software:
 #     /opt/SUNWut/sbin/utconfig
 #     /opt/SUNWut/sbin/utadm -L on
+#     /opt/SUNWut/sbin/utadm -A 166.59.84.0  # ignore errors here
 #     /opt/SUNWut/sbin/utfwadm -A -f /opt/SUNWut/lib/firmware_gui  -V -a
 #     /opt/SUNWut/sbin/utrestart
 #     /etc/init.d/zsunray-init stop
@@ -88,7 +89,10 @@ patch -p3 < $here/srss4.1.debian-3.patch
 
 echo "Patching kernel modules..."
 cd $tmpdir/usr/src/SUNWut
-patch -p1 < $here/modules-4.1beta.diff
+#patch -p1 < $here/modules-4.1beta.diff
+patch -p0 < $here/utadem.patch
+patch -p0 < $here/utdisk.patch
+patch -p0 < $here/utio.patch
 patch -p1 < $here/tims_patch.diff
 
 echo "Building all kernel modules for all kernels we can find on the machine"
@@ -104,7 +108,7 @@ for module_dir in src/SUNWut/*; do
             VERSION=$V make
             if [ $? -eq 0 ]; then
                     mkdir -p $tmpdir/lib/modules/$V/misc
-                    cp -R *.ko $tmpdir/lib/modules/$V/misc || exit 1
+                    cp -R *.ko $tmpdir/lib/modules/$V/misc
                     make clean
             fi
         )
