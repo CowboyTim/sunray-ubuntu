@@ -1,0 +1,41 @@
+set +e
+if [ -x /etc/opt/SUNWut/xinitrc.d/0010.SUNWut.xdmEnv ]; then
+        . /etc/opt/SUNWut/xinitrc.d/0010.SUNWut.xdmEnv
+fi
+
+if [ -x /etc/opt/SUNWut/xinitrc.d/0100.SUNWut ]; then
+#       SUN_SUNRAY_UTXLOCK_PREF=
+#       export SUN_SUNRAY_UTXLOCK_PREF
+        . /etc/opt/SUNWut/xinitrc.d/0100.SUNWut
+fi
+
+
+if [ ! -d $HOME/.pulse ] ; then
+        mkdir $HOME/.pulse
+fi
+
+pkill -u `id -u` pulseaudio
+
+cat > $HOME/.pulse/default.pa <<EOcat
+load-module module-oss device=$UTAUDIODEV playback=1 record=1 fragment_size=8192
+load-module module-native-protocol-unix
+load-module module-esound-protocol-unix
+#load-module module-esound-protocol-tcp auth-ip-acl=127.0.0.1
+EOcat
+
+# create asoundrc for pulseaudio redirection
+cat > $HOME/.asoundrc <<EOcat
+pcm.!default {
+  type pulse
+}
+ctl.!default {
+  type pulse
+}
+EOcat
+
+# start pulseaudio deamon
+pulseaudio -D
+
+unset AUDIODEV
+
+set -e

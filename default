@@ -1,0 +1,14 @@
+#
+# ident "@(#)default-profile.src        1.6     06/08/23 SMI"
+#
+# Copyright 2006 Sun Microsystems, Inc.  All rights reserved.
+# Use is subject to license terms.
+#
+#
+
+#lib64
+jre
+syslog
+cron
+#pam
+#compatlinks

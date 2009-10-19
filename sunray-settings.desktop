@@ -1,0 +1,10 @@
+[Desktop Entry]
+Encoding=UTF-8
+Name=SunRay Settings
+Comment=Adjust audio and video properties
+Exec=/opt/SUNWut/bin/utsettings
+Icon=gdm-setup.png
+Terminal=false
+Type=Application
+Categories=Application;AudioVideo;
+StartupNotify=false
