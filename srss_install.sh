@@ -189,15 +189,16 @@ echo "Audio setup/fixes..."
 mkdir -p $tmpdir/etc/X11/Xsession.d
 cat > $tmpdir/etc/X11/Xsession.d/10SUNWut <<EOs
 set +e
-if [ -x /etc/X11/xinit/xinitrc.d/0010.SUNWut.xdmEnv ]; then
-        . /etc/X11/xinit/xinitrc.d/0010.SUNWut.xdmEnv
+if [ -x /etc/opt/SUNWut/xinitrc.d/0010.SUNWut.xdmEnv ]; then
+        . /etc/opt/SUNWut/xinitrc.d/0010.SUNWut.xdmEnv
 fi
 
-if [ -x /etc/X11/xinit/xinitrc.d/0100.SUNWut ]; then
+if [ -x /etc/opt/SUNWut/xinitrc.d/0100.SUNWut ]; then
 #       SUN_SUNRAY_UTXLOCK_PREF=
 #       export SUN_SUNRAY_UTXLOCK_PREF
-        . /etc/X11/xinit/xinitrc.d/0100.SUNWut
+        . /etc/opt/SUNWut/xinitrc.d/0100.SUNWut
 fi
+
 
 if [ ! -d \$HOME/.pulse ] ; then
         mkdir \$HOME/.pulse
