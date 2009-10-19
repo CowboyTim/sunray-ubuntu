@@ -136,17 +136,17 @@ echo "Fixing xkb stuff..."
         mkdir -p $tmpdir/opt/SUNWut/lib
         cp -R $pkg_tmpdir/usr/share/X11/xkb/* $tmpdir/opt/SUNWut/lib/xkb
         rm -rf $pkg_tmpdir
+        ln -s /usr/bin/xkbcomp $tmpdir/opt/SUNWut/lib/xkb/xkbcomp
+        mkdir $tmpdir/etc/X11
+        ln -s /usr/share/X11/XKeysymDB $tmpdir/etc/X11/XKeysymDB
     done
 )
 
 echo "Making symlinks..."
 mkdir -p $tmpdir/usr/X11R6/lib
 ln -s /etc/X11 $tmpdir/usr/X11R6/lib/X11
-ln -s /usr/share/X11/XKeysymDB $tmpdir/etc/X11/XKeysymDB
-mkdir -p $tmpdir/lib
 ln -s /usr/lib32/libldap-2.4.so.2 $tmpdir/opt/SUNWut/lib/libldap.so.199
 ln -s /usr/lib32/liblber-2.4.so.2 $tmpdir/opt/SUNWut/lib/liblber.so.199
-ln -s /usr/bin/xkbcomp $tmpdir/opt/SUNWut/lib/xkb/xkbcomp
 
 echo "Making symlink for tftp. SunRay software expects /tftpboot"
 mkdir -p $tmpdir/srv/tftp
