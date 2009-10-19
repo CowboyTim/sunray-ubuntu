@@ -18,7 +18,7 @@ case "$1" in
     touch /tmp/SUNWut/config/xconfig/Xservers
     touch /tmp/SUNWut/config/xconfig/Xconfig
 
-    if [ -s /etc/gdm/gdm.conf]; then
+    if [ -s /etc/gdm/gdm.conf ]; then
         mv /etc/gdm/gdm.conf /etc/gdm/gdm.conf.`date +%s`
     fi
     

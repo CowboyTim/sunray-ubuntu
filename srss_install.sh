@@ -1,13 +1,24 @@
 #!/bin/bash
 
-# 64-bit:
+# Steps:
 #
-# apt-get install fakeroot alien pdksh lib32stdc++6 libldap-2.4-2 ldap-utils tftpd gawk ia32-libs xkb-data-legacy
-
-
-# 32-bit:
+# 1. Install software needed to build our own package:
+#     64-bit:
+#     apt-get install fakeroot alien pdksh lib32stdc++6 libldap-2.4-2 ldap-utils tftpd gawk ia32-libs xkb-data-legacy
 #
-# apt-get install fakeroot alien sun-java6-jre pdksh  libldap-2.4-2 ldap-utils tftpd libmotif3 gawk
+#     32-bit:
+#     apt-get install fakeroot alien sun-java6-jre pdksh  libldap-2.4-2 ldap-utils tftpd libmotif3 gawk
+#
+# 2. install the created srss package:
+#     dpkg -i srss*.deb
+#
+# 4. configure the sunray software:
+#     /opt/SUNWut/sbin/utconfig
+#     /opt/SUNWut/sbin/utadm -L on
+#     /opt/SUNWut/sbin/utrestart
+#     /etc/init.d/zsunray-init stop
+#     /etc/init.d/zsunray-init start
+#
 
 source_dir=$1
 if [ -z $source_dir ]; then
@@ -93,7 +104,7 @@ chmod 644 $tmpdir/usr/share/applications/sunray-settings.desktop
 echo "Configuring GDM..."
 mkdir -p $tmpdir/etc/X11/xdm
 mkdir -p $tmpdir/etc/gdm
-cp $here/gdm.conf-custom $tmpdir/gdm.conf-custom 
+cp $here/gdm.conf-custom $tmpdir/etc/gdm/gdm.conf-custom 
 
 cat > $tmpdir/opt/SUNWut/lib/utctl.d/profiles/default <<EO
 #
