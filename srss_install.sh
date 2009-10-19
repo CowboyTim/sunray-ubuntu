@@ -81,22 +81,6 @@ cd $tmpdir/usr
 )
 mv $tmpdir/usr/jre1.5.0_11 $tmpdir/usr/j2se
 rm $tmpdir/usr/jre-1_5_0_11-linux-i586.bin
-#ln -s /usr/lib/jvm/java-6-sun/jre $tmpdir/etc/opt/SUNWut/jre
-
-echo  "Add zsunray-init script to configure sunray software running from init"
-cp $here/zsunray-init $tmpdir/etc/init.d
-chmod +x $tmpdir/etc/init.d/zsunray-init
-
-echo "Adding Sun Ray Settings menu utem..."
-mkdir -p $tmpdir/usr/share/applications
-cp $here/sunray-settings.desktop $tmpdir/usr/share/applications/sunray-settings.desktop
-
-# Setup GDM settings.
-echo "Configuring GDM..."
-mkdir -p $tmpdir/etc/gdm
-cp $here/gdm.conf-custom $tmpdir/etc/gdm/gdm.conf-custom 
-
-cp $here/default $tmpdir/opt/SUNWut/lib/utctl.d/profiles/default
 
 echo "Patching... SunRay /opt/SUNWut software"
 cd $tmpdir/opt/SUNWut
@@ -104,12 +88,10 @@ patch -p3 < $here/srss4.1.debian-3.patch
 
 echo "Patching kernel modules..."
 cd $tmpdir/usr/src/SUNWut
-#patch -p2 < $here/srss4.0.debian-modules-4.patch
-#patch -p1 < $here/modules-4.0-2.diff
-#patch -p1 < $here/Patch-modules-SRSS4-0907.txt
-#patch -p1 < $here/Patch-modules-SRSS4-0907-phase2.txt
 patch -p1 < $here/modules-4.1beta.diff
 patch -p1 < $here/tims_patch.diff
+
+echo "Building all kernel modules for all kernels we can find on the machine"
 cd $tmpdir/usr
 for module_dir in src/SUNWut/*; do
     echo "Build module $module_dir..."
@@ -152,12 +134,6 @@ echo "Fixing xkb stuff..."
         rm -rf $pkg_tmpdir
     done
 )
-cp -R $tmpdir/opt/SUNWut/lib/xkbfiles/* $tmpdir/opt/SUNWut/lib/xkb
-#cd $tmpdir/opt/SUNWut/lib/xkb
-#cd geometry ; xkbcomp -lfhlpR -o geometry.dir '*' ; mv geometry.dir ..
-#cd ../keycodes ; xkbcomp -lfhlpR -o keycodes.dir '*' ; mv keycodes.dir ..
-#cd ../keymap ; xkbcomp -lfhlpR -o keymap.dir '*' ; mv keymap.dir ..
-#cd ../symbols ; xkbcomp -lfhlpR -o symbols.dir '*' ; mv symbols.dir ..
 
 echo "Making symlinks..."
 mkdir -p $tmpdir/usr/X11R6/lib
@@ -167,23 +143,19 @@ mkdir -p $tmpdir/lib
 ln -s /usr/lib32/libldap-2.4.so.2 $tmpdir/opt/SUNWut/lib/libldap.so.199
 ln -s /usr/lib32/liblber-2.4.so.2 $tmpdir/opt/SUNWut/lib/liblber.so.199
 ln -s /usr/bin/xkbcomp $tmpdir/opt/SUNWut/lib/xkb/xkbcomp
+
+echo "Making symlink for tftp. SunRay software expects /tftpboot"
 mkdir -p $tmpdir/srv/tftp
 ln -s /srv/tftp $tmpdir/tftpboot
-
-echo "Audio setup/fixes..."
-mkdir -p $tmpdir/etc/X11/Xsession.d
-cp $here/10SUNWut $tmpdir/etc/X11/Xsession.d/10SUNWut
-
-echo "Setting saving options..."
-mkdir -p $tmpdir/etc/opt/SUNWut/gdm//SunRayInit/helpers
-cp $here/xset $tmpdir/etc/opt/SUNWut/gdm//SunRayInit/helpers/xset
-chmod +x $tmpdir/etc/opt/SUNWut/gdm//SunRayInit/helpers/xset
 
 echo "Xnewt needs at least 1 font, in one fontpath"
 mkdir -p $tmpdir/usr/share/X11/fonts
 ln -s /usr/share/fonts/X11/misc $tmpdir/usr/share/X11/fonts/misc
 mkdir -p $tmpdir/usr/lib/X11/fonts
 ln -s /usr/share/fonts/X11/misc $tmpdir/usr/lib/X11/fonts/misc
+
+echo "Copying our own files"
+cp -R $here/{etc,opt,usr} $tmpdir
 
 echo "Making tar..."
 cd $tmpdir
