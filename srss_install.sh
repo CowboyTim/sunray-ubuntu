@@ -4,7 +4,9 @@
 #
 # 1. Install software needed to build our own package:
 #     64-bit:
-#     apt-get install fakeroot alien pdksh lib32stdc++6 libldap-2.4-2 ldap-utils tftpd gawk ia32-libs xkb-data-legacy
+#     apt-get install fakeroot alien pdksh lib32stdc++6 libldap-2.4-2 ldap-utils tftpd gawk ia32-libs 
+#     
+#     Ubuntu 8.04/8.10, add this too (not for 9.04): apt-get install xkb-data-legacy
 #
 #     32-bit:
 #     apt-get install fakeroot alien sun-java6-jre pdksh  libldap-2.4-2 ldap-utils tftpd libmotif3 gawk
@@ -119,27 +121,34 @@ echo "Making empty dirs..."
 mkdir -p $tmpdir/var/dt
 mkdir -p $tmpdir/var/opt/SUNWut/tokens
 mkdir -p $tmpdir/var/opt/SUNWut/displays
-mkdir -p $tmpdir/opt/SUNWut/lib/xkb
-mkdir -p $tmpdir/opt/SUNWut/lib/xkb/compiled
 
 echo "Fixing xkb stuff..."
 (
-    cd $tmpdir
-    wget $baseurl/universe/x/xkb-data-legacy/xkb-data-legacy_1.0.1-4_all.deb
-    for extra_pkg in $tmpdir/xkb-data-legacy_1.0.1-4_all.deb; do
-        pkg_tmpdir=/var/tmp/pkg_tmp_dir
-        mkdir -p $pkg_tmpdir
-        cd $pkg_tmpdir
-        fakeroot alien $extra_pkg --to-tgz
-        tar xvzf $pkg_tmpdir/*.tgz 
-        rm -f $pkg_tmpdir/*.tgz
-        mkdir -p $tmpdir/opt/SUNWut/lib
-        cp -R $pkg_tmpdir/usr/share/X11/xkb/* $tmpdir/opt/SUNWut/lib/xkb
-        rm -rf $pkg_tmpdir
-        ln -s /usr/bin/xkbcomp $tmpdir/opt/SUNWut/lib/xkb/xkbcomp
-        mkdir $tmpdir/etc/X11
-        ln -s /usr/share/X11/XKeysymDB $tmpdir/etc/X11/XKeysymDB
-    done
+    if [ ! -z $ubuntu_8 ]; then
+        cd $tmpdir
+        wget $baseurl/universe/x/xkb-data-legacy/xkb-data-legacy_1.0.1-4_all.deb
+        for extra_pkg in $tmpdir/xkb-data-legacy_1.0.1-4_all.deb; do
+            pkg_tmpdir=/var/tmp/pkg_tmp_dir
+            mkdir -p $pkg_tmpdir
+            cd $pkg_tmpdir
+            fakeroot alien $extra_pkg --to-tgz
+            tar xvzf $pkg_tmpdir/*.tgz 
+            rm -f $pkg_tmpdir/*.tgz
+            mkdir -p $tmpdir/opt/SUNWut/lib
+            cp -R $pkg_tmpdir/usr/share/X11/xkb/* $tmpdir/opt/SUNWut/lib/xkb
+            rm -rf $pkg_tmpdir
+            ln -s /usr/bin/xkbcomp $tmpdir/opt/SUNWut/lib/xkb/xkbcomp
+            mkdir $tmpdir/etc/X11
+            ln -s /usr/share/X11/XKeysymDB $tmpdir/etc/X11/XKeysymDB
+        done
+    else
+        mv $tmpdir/opt/SUNWut/lib/xkb $tmpdir/opt/SUNWut/lib/xkb.bak
+        ln -s /usr/share/X11/xkb $tmpdir/opt/SUNWut/lib/xkb
+        mkdir -p $tmpdir/usr/share/X11/xkb
+        cp -a $tmpdir/opt/SUNWut/lib/xkb.bak/xkbtable.map $tmpdir/usr/share/X11/xkb
+        ln -s /var/lib/xkb $tmpdir/usr/share/X11/xkb/compiled
+        ln -s /usr/bin/xkbcomp $tmpdir/usr/share/X11/xkb/xkbcomp
+    fi
 )
 
 echo "Making symlinks..."
