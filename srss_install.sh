@@ -2,14 +2,18 @@
 
 # Steps:
 #
-# 1. Install software needed to build our own package:
+# 0. download the srss 4.1 linux from Sun.
+# 1. install software needed to build our own package:
 #     64-bit:
-#     apt-get install fakeroot alien pdksh lib32stdc++6 libldap-2.4-2 ldap-utils tftpd gawk ia32-libs 
+#       apt-get install fakeroot alien pdksh lib32stdc++6 \
+#                   libldap-2.4-2 ldap-utils tftpd gawk ia32-libs 
 #     
-#     Ubuntu 8.04/8.10, add this too (not for 9.04): apt-get install xkb-data-legacy
+#     Ubuntu 8.04/8.10, add this too (not for 9.04):
+#       apt-get install xkb-data-legacy
 #
 #     32-bit:
-#     apt-get install fakeroot alien sun-java6-jre pdksh  libldap-2.4-2 ldap-utils tftpd libmotif3 gawk
+#       apt-get install fakeroot alien sun-java6-jre pdksh  \
+#                   libldap-2.4-2 ldap-utils tftpd libmotif3 gawk
 #
 # 2. install the created srss package:
 #     dpkg -i srss*.deb
@@ -22,6 +26,11 @@
 #     /opt/SUNWut/sbin/utrestart
 #     /etc/init.d/zsunray-init stop
 #     /etc/init.d/zsunray-init start
+#
+# A known issue happens with the gnome-settings-daemon. Upon debugging this
+# with gdm, this has something to do with libxklavier on ubuntu 9.04 x86_64.
+# On ubuntu 8.04, something similar happens (although I didn't bother debugging
+# that).
 #
 
 source_dir=$1
@@ -91,7 +100,6 @@ patch -p3 < $here/srss4.1.debian-3.patch
 
 echo "Patching kernel modules..."
 cd $tmpdir/usr/src/SUNWut
-#patch -p1 < $here/modules-4.1beta.diff
 patch -p0 < $here/utadem.patch
 patch -p0 < $here/utdisk.patch
 patch -p0 < $here/utio.patch
