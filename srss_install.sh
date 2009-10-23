@@ -88,10 +88,32 @@
 #                 }
 #         }
 #
+#
+#
+#
+# KNOWN ISSUES:
+#
+# 1. GNOME
 # A known issue happens with the gnome-settings-daemon. Upon debugging this
 # with gdb, this has something to do with libxklavier on ubuntu 9.04 x86_64.
 # On ubuntu 8.04, something similar happens (although I didn't bother debugging
 # that).
+#
+# 2. KDE 4
+# Sadly enough, KDE 4 (and probably Qt4) uses XRENDER *alot*. As that's not
+# implemented (probably going to be as of the next release of srss), it looks
+# ugly. Even if XRENDER would be supported, it's probably going to use lot's of
+# cpu resources, and it would be a bad idea to have 50 users running KDE 4.
+#
+# 3. flash (for in firefox)
+# nsppluginwrapper flash sucks. However, as that is a 32-bit flash, colors look
+# allright. The 64-bit flash is better for stability, however, red and blue
+# colors are switched. On ubuntu 9.04, this also appears to be the case I think
+# when I checked this briefly. The colormask is different as from a normal X,
+# this can be checked with xdpyinfo.
+#
+# 4. VMware's console viewer
+# colors red and blue are swapped too.
 #
 
 source_dir=$1
