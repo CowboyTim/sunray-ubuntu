@@ -43,7 +43,7 @@
 #     /etc/init.d/zsunray-init start
 #
 # A known issue happens with the gnome-settings-daemon. Upon debugging this
-# with gdm, this has something to do with libxklavier on ubuntu 9.04 x86_64.
+# with gdb, this has something to do with libxklavier on ubuntu 9.04 x86_64.
 # On ubuntu 8.04, something similar happens (although I didn't bother debugging
 # that).
 #
