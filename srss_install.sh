@@ -42,6 +42,52 @@
 #     /etc/init.d/zsunray-init stop
 #     /etc/init.d/zsunray-init start
 #
+# 5. configure a DHCP server somwhere. The reason I didn't leave this in thos
+#    script somewhere is because it's not really needed, and it is usually
+#    easier to have one seperate somwhere.
+#
+#    Taken from https://help.ubuntu.com/community/UbuntuOnSunRay :
+#
+#         # Example SunRay dhcpd.conf
+#         # IP of SunRay server: 192.168.1.101
+#         # IP-Range for SunRays: 192.168.1.185-192.168.1.199
+#         # SunRay firmware version: 3.0_51,REV=2004.11.10.16.18
+# 
+#         #Sun Ray
+#         option space SunRay;
+#         option SunRay.AuthSrvr  code 21 = ip-address;
+#         option SunRay.AuthSrvr  192.168.1.101;
+#         option SunRay.FWSrvr    code 31 = ip-address;
+#         option SunRay.FWSrvr    192.168.1.101;
+#         option SunRay.NewTVer   code 23 = text;
+#         option SunRay.NewTVer   "3.0_51,REV=2004.11.10.16.18";
+#         option SunRay.Intf      code 33 = text;
+#         option SunRay.Intf      "eth2";
+#         option SunRay.LogHost   code 24 = ip-address;
+#         option SunRay.LogHost   192.168.1.101;
+#         option SunRay.LogKern   code 25 = integer 8;
+#         option SunRay.LogKern   6;
+#         option SunRay.LogNet    code 26 = integer 8;
+#         option SunRay.LogNet    6;
+#         option SunRay.LogUSB    code 27 = integer 8;
+#         option SunRay.LogUSB    6;
+#         option SunRay.LogVid    code 28 = integer 8;
+#         option SunRay.LogVid    6;
+#         option SunRay.LogAppl   code 29 = integer 8;
+#         option SunRay.LogAppl   6;
+# 
+#         group
+#         {
+#                 vendor-option-space SunRay;
+#                 subnet 192.168.1.0 netmask 255.255.255.0 {
+#                         default-lease-time 720000;
+#                         max-lease-time 1440000;
+#                         authoritative;
+#                         option routers 192.168.1.30;
+#                         range 192.168.1.185 192.168.1.199; 
+#                 }
+#         }
+#
 # A known issue happens with the gnome-settings-daemon. Upon debugging this
 # with gdb, this has something to do with libxklavier on ubuntu 9.04 x86_64.
 # On ubuntu 8.04, something similar happens (although I didn't bother debugging
