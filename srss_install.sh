@@ -1,5 +1,16 @@
 #!/bin/bash
-
+#
+# Lot's of this script got together with help from "The Internet":
+#
+#  https://help.ubuntu.com/community/UbuntuOnSunRay
+#  http://wiki.sun-rays.org/index.php/Sun_Ray_on_Ubuntu
+#
+# So lot's of credits goes to those people. However, I want nice and clean
+# reproducible results, so I combined this in a script that makes a deb package
+# that can be installed easily. Also, at the time (release date ubuntu 8.04)
+# that I made this, I had to spend alot of time to get e.g. the sound working
+# with all applications on all window managers.
+#
 # Steps:
 #
 # 0. download the srss 4.1 linux from Sun.
@@ -10,6 +21,10 @@
 #     
 #     Ubuntu 8.04/8.10, add this too (not for 9.04):
 #       apt-get install xkb-data-legacy
+#
+#     Optionally, you can add different kernels. The patch for the modules that
+#     I made makes it possible that multiple kernel-versioned modules can be
+#     built. e.g. -rt,-server,-generic, all for different versions.
 #
 #     32-bit:
 #       apt-get install fakeroot alien sun-java6-jre pdksh  \
@@ -132,7 +147,10 @@ mkdir -p $tmpdir/var/opt/SUNWut/displays
 
 echo "Fixing xkb stuff..."
 (
-    if [ ! -z $ubuntu_8 ]; then
+    this_os_version=$(lsb_release -r -s)
+    if [ $this_os_version = '8.04' \
+         -o $this_os_version = '8.04.1' \
+         -o $this_os_version = '8.10' ]; then
         cd $tmpdir
         wget $baseurl/universe/x/xkb-data-legacy/xkb-data-legacy_1.0.1-4_all.deb
         for extra_pkg in $tmpdir/xkb-data-legacy_1.0.1-4_all.deb; do
