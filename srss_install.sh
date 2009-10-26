@@ -30,7 +30,10 @@
 #       apt-get install fakeroot alien sun-java6-jre pdksh  \
 #                   libldap-2.4-2 ldap-utils tftpd libmotif3 gawk
 #
-# 2. install the created srss package:
+# 2. build the srss package, as a regular user:
+#     bash ./srss_install.sh <dir to srss unpack or iso mount>
+#
+# 3. install the created srss package:
 #     dpkg -i srss*.deb
 #
 # 4. configure the sunray software:

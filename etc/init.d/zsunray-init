@@ -18,10 +18,8 @@ case "$1" in
     touch /tmp/SUNWut/config/xconfig/Xservers
     touch /tmp/SUNWut/config/xconfig/Xconfig
 
-    if [ -f /etc/gdm/gdm.conf ]; then
-        mv /etc/gdm/gdm.conf /etc/gdm/gdm.conf.`date +%s`
-    fi
     cp /etc/gdm/gdm.conf-sunray /etc/gdm/gdm.conf
+    cp /etc/gdm/gdm.conf-sunray /etc/gdm/gdm-cdd.conf
 
     /etc/init.d/openbsd-inetd start
 	/etc/init.d/gdm restart
