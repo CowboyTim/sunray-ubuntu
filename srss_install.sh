@@ -120,9 +120,14 @@
 #
 
 source_dir=$1
+version=$2
 if [ -z $source_dir ]; then
-    echo "Usage: $0 <srss software source dir>"
+    echo "Usage: $0 <srss software source dir> [version]"
     exit 0
+fi
+
+if [ -z $version ]; then
+    version='4.1'
 fi
 
 here=$(dirname $(readlink -f $0))
@@ -185,7 +190,12 @@ rm $tmpdir/usr/$java_install_file
 
 echo "Patching... SunRay /opt/SUNWut software"
 cd $tmpdir/opt/SUNWut
-patch -p3 < $here/srss4.1.debian-3.patch
+if [ $version = '4.1' ]; then
+    patch -p3 < $here/srss4.1.debian-3.patch
+fi
+if [ $version = '4.2' ]; then
+    patch -p3 < $here/srss4.2.debian-3.patch
+fi
 
 echo "Patching kernel modules..."
 cd $tmpdir/usr/src/SUNWut

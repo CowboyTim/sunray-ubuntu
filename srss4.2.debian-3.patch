@@ -1,0 +1,137 @@
+diff -Naur srss.orig/opt/SUNWut/lib/dhcp/isc/utdhcpservice srss.494/opt/SUNWut/lib/dhcp/isc/utdhcpservice
+--- srss.orig/opt/SUNWut/lib/dhcp/isc/utdhcpservice	2009-11-17 15:39:40.000000000 +0100
++++ srss.494/opt/SUNWut/lib/dhcp/isc/utdhcpservice	2009-11-17 15:40:15.000000000 +0100
+@@ -95,13 +95,12 @@
+ 
+ function StatusDHCP {
+     typeset PACKAGE="${DHCP_PACKAGE}"
+-    if $DHCP_INSTALLED ; then
+-      # get the actual package name including version and release
+-      PACKAGE="$(rpm -q ${DHCP_PACKAGE} 2> /dev/null)"
+-    fi
+-    if ! $DHCP_RUNNING && [ $DHCP_STATE != "unconfigured" ] ; then
+-      DHCP_STATE="disabled"
+-    fi
++    DHCP_INSTALLED=true
++    DHCP_ENABLED=true
++    DHCP_CONFIGURED=true
++    DHCP_RUNNING=true
++    DHCP_PACKAGE="dhcp3-server"
++    DHCP_STATE="online"
+     print "begin dhcpstate"
+     print "installed=${DHCP_INSTALLED}"
+     print "enabled=${DHCP_ENABLED}"
+diff -Naur srss.orig/opt/SUNWut/lib/utadmingid srss.494/opt/SUNWut/lib/utadmingid
+--- srss.orig/opt/SUNWut/lib/utadmingid	2009-11-17 15:39:40.000000000 +0100
++++ srss.494/opt/SUNWut/lib/utadmingid	2009-11-17 15:40:15.000000000 +0100
+@@ -15,7 +15,7 @@
+ ETCDIR="/etc/opt/SUNWut"
+ UTADMINPW=${ETCDIR}/utadmin.pw
+ if [ -f $UTADMINPW ] ; then
+-	WEBGUI_GROUP=`/bin/ls -gn $UTADMINPW | /bin/awk '{print $3}' `
++	WEBGUI_GROUP=`/bin/ls -gn $UTADMINPW | /usr/bin/awk '{print $3}' `
+ fi
+ WEBGUI_GROUP=${WEBGUI_GROUP:-root}
+ print $WEBGUI_GROUP
+diff -Naur srss.orig/opt/SUNWut/lib/utdmsession srss.494/opt/SUNWut/lib/utdmsession
+--- srss.orig/opt/SUNWut/lib/utdmsession	2009-11-17 15:39:40.000000000 +0100
++++ srss.494/opt/SUNWut/lib/utdmsession	2009-11-17 15:40:15.000000000 +0100
+@@ -23,10 +23,10 @@
+ #	    -z - optional tag for logging purposes
+ #
+ 
+-#exec >/var/tmp/utdmsession.$$ 2>&1       # Debug
+-#set -x
++exec >/var/tmp/utdmsession.$$ 2>&1       # Debug
++set -x
+ 
+-MOD="`/bin/basename $0`"
++MOD="`basename $0`"
+ USAGE="usage: $MOD [-c|-d] Xdisplay [-z tag]"
+ UTMNT_DIRLOCK=".session"
+ 
+diff -Naur srss.orig/opt/SUNWut/lib/utgdmconfigpath srss.494/opt/SUNWut/lib/utgdmconfigpath
+--- srss.orig/opt/SUNWut/lib/utgdmconfigpath	2009-11-17 15:39:40.000000000 +0100
++++ srss.494/opt/SUNWut/lib/utgdmconfigpath	2009-11-17 15:45:25.000000000 +0100
+@@ -33,7 +33,7 @@
+ else
+     gdm_path=`rpm -ql "gdm" | grep "custom.conf"`
+     if [ $? -ne 0 ]; then
+-	status=1
++	gdm_dir=/etc/gdm
+     else
+ 	gdm_dir=${gdm_path%custom.conf}
+     fi
+diff -Naur srss.orig/opt/SUNWut/lib/utprodinfo srss.494/opt/SUNWut/lib/utprodinfo
+--- srss.orig/opt/SUNWut/lib/utprodinfo	2009-11-17 15:39:40.000000000 +0100
++++ srss.494/opt/SUNWut/lib/utprodinfo	2009-11-17 15:40:15.000000000 +0100
+@@ -341,7 +341,8 @@
+ 		# found no params, just return
+ 		return 0
+ 	fi
+-	rpm -q --queryformat ${MAPPEDLIST} $PKGNAME 2>/dev/null
++    echo "/opt"
++	#rpm -q --queryformat ${MAPPEDLIST} $PKGNAME 2>/dev/null
+ 	return 0
+ }
+ 
+@@ -356,6 +357,7 @@
+ 	if [[ $# -ne 2 ]]; then
+ 		return 1
+ 	fi
++    return 0
+ 	case $1 in
+ 	"installed")	# package installed, could be either partial or complete
+ 		rpm -q --quiet $2 > /dev/null 2>&1
+diff -Naur srss.orig/opt/SUNWut/sbin/utconfig srss.494/opt/SUNWut/sbin/utconfig
+--- srss.orig/opt/SUNWut/sbin/utconfig	2009-11-17 15:39:40.000000000 +0100
++++ srss.494/opt/SUNWut/sbin/utconfig	2009-11-17 15:40:15.000000000 +0100
+@@ -1720,9 +1720,9 @@
+ UT_PROD_NAME="Sun Ray Server Software"
+ UT_VERSION="4.2"
+ 
+-if ! UTInstalled; then
+-  Fatal "$UT_PROD_NAME is not installed on this host"
+-fi
++#if ! UTInstalled; then
++#  Fatal "$UT_PROD_NAME is not installed on this host"
++#fi
+ 
+ UTA_BASEDIR="$(${G_MEDIA_DIR}/utprodinfo -r SUNWuta)/SUNWut"
+ UTO_BASEDIR="$(${G_MEDIA_DIR}/utprodinfo -r SUNWuto)/SUNWut"
+@@ -1752,23 +1752,23 @@
+ SRDS_RN="3.2"
+ SRDS_PACKAGE="SUNWutdso"
+ 
+-if ! SRDSInstalled; then
+-  Fatal "$SRDS_PN is not installed on this host"
+-elif ! SRDSVersion $SRDS_RN; then
+-  Fatal "$SRDS_PN $SRDS_RN is not installed on this host"
+-elif SRDSInstallPartial; then
+-  Fatal "$SRDS_PN $SRDS_RN is only partially installed"
+-fi
++#if ! SRDSInstalled; then
++#  Fatal "$SRDS_PN is not installed on this host"
++#elif ! SRDSVersion $SRDS_RN; then
++#  Fatal "$SRDS_PN $SRDS_RN is not installed on this host"
++#elif SRDSInstallPartial; then
++#  Fatal "$SRDS_PN $SRDS_RN is only partially installed"
++#fi
+ 
+ SRDS_BASEDIR="$(${G_MEDIA_DIR}/utprodinfo -r $SRDS_PACKAGE)/SUNWut"
+ 
+ LCL_PROD_NAME="LDAP Client Libraries"
+ 
+-if ! LdapClientInstalled; then
+-  Fatal "$LCL_PROD_NAME is not installed on this host"
+-elif LdapClientInstallPartial; then
+-  Fatal "$LCL_PROD_NAME is only partially installed"
+-fi
++#if ! LdapClientInstalled; then
++#  Fatal "$LCL_PROD_NAME is not installed on this host"
++#elif LdapClientInstallPartial; then
++#  Fatal "$LCL_PROD_NAME is only partially installed"
++#fi
+ 
+ UT_ROOT_S="Sun Ray root"
+ DEFAULT_ROOTENTRY="o=utdata"
