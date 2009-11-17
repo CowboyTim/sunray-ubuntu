@@ -168,17 +168,20 @@ done
 
 echo "Adding java..."
 mkdir -p $tmpdir/etc/opt/SUNWut
-cp $source_dir/Supplemental/Java_Runtime_Environment/Linux/jre-1_5_0_11-linux-i586.bin $tmpdir/usr
+java_install_dir=$source_dir/Supplemental/Java_Runtime_Environment/Linux
+java_install_file=$(basename `ls $java_install_dir/*.bin`)
+cp $java_install_dir/$java_install_file $tmpdir/usr
 cd $tmpdir/usr
 (
     function more (){
         true    
     }         
     export -f more
-    bash -x ./jre-1_5_0_11-linux-i586.bin < <(printf "yes\n")
+    bash -x ./$java_install_file < <(printf "yes\n")
 )
-mv $tmpdir/usr/jre1.5.0_11 $tmpdir/usr/j2se
-rm $tmpdir/usr/jre-1_5_0_11-linux-i586.bin
+java_install_target_dir=$(basename `find $tmpdir/usr -name 'jre*' -type d`)
+mv $tmpdir/usr/$java_install_target_dir $tmpdir/usr/j2se
+rm $tmpdir/usr/$java_install_file
 
 echo "Patching... SunRay /opt/SUNWut software"
 cd $tmpdir/opt/SUNWut
