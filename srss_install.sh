@@ -195,6 +195,9 @@ if [ $version = '4.1' ]; then
 fi
 if [ $version = '4.2' ]; then
     patch -p3 < $here/srss4.2.debian-3.patch
+    echo "Xstartup helper must not be +x, as it's a ksh script, being"
+    echo "sourced by a sh program else, see /etc/opt/SUNWut/gdm/SunRayPreSession/Default"
+    chmod -x $tmpdir/opt/SUNWut/lib/prototype/Xstartup.SUNWut.prototype
 fi
 
 echo "Patching kernel modules..."
