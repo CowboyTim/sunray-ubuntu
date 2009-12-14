@@ -107,6 +107,7 @@
 # implemented (probably going to be as of the next release of srss), it looks
 # ugly. Even if XRENDER would be supported, it's probably going to use lot's of
 # cpu resources, and it would be a bad idea to have 50 users running KDE 4.
+# srss 4.2 (SunRay software 5) fixes XRENDER
 #
 # 3. flash (for in firefox)
 # nsppluginwrapper flash sucks. However, as that is a 32-bit flash, colors look
@@ -117,6 +118,9 @@
 #
 # 4. VMware's console viewer
 # colors red and blue are swapped too.
+#
+# 6. on ubuntu 9.10, use:
+#   $ sudo apt-get install gdm-2.20
 #
 
 source_dir=$1
