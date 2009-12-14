@@ -211,6 +211,10 @@ patch -p0 < $here/utdisk.patch
 patch -p0 < $here/utio.patch
 patch -p1 < $here/tims_patch.diff
 
+# FIXME: not going to work when multiple are there and for older versions of
+# the kernel, as we patch them all now
+patch -p1 < $here/new-2.6.31-kernel-module.patch
+
 echo "Building all kernel modules for all kernels we can find on the machine"
 cd $tmpdir/usr
 for module_dir in src/SUNWut/*; do

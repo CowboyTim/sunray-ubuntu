@@ -1,0 +1,263 @@
+diff -ru SUNWut.old/utadem/utadem.c SUNWut.new/utadem/utadem.c
+--- SUNWut.old/utadem/utadem.c	2009-10-20 02:46:05.000000000 +0200
++++ SUNWut.new/utadem/utadem.c	2009-12-14 17:39:09.000000000 +0100
+@@ -1779,7 +1779,7 @@
+ 		if (!capable(CAP_SYS_ADMIN))
+ 			return (-EPERM);
+ 		down_write(&conn->syscall_rwsem);
+-		ret = do_newsession(conn, current->uid);
++		ret = do_newsession(conn, current->cred->uid);
+ 		up_write(&conn->syscall_rwsem);
+ 		return (ret);
+ 	}
+diff -ru SUNWut.old/utdisk/utdisk.c SUNWut.new/utdisk/utdisk.c
+--- SUNWut.old/utdisk/utdisk.c	2009-12-14 17:48:40.000000000 +0100
++++ SUNWut.new/utdisk/utdisk.c	2009-12-14 17:39:39.000000000 +0100
+@@ -466,7 +466,7 @@
+ 
+ 	utprintf("%s: caller %d, owner %d\n", __FUNCTION__,
+ 				current->uid, dsp->owner);
+-	if ((current->uid != 0) && (dsp->owner != current->uid)) {
++	if ((current->cred->uid != 0) && (dsp->owner != current->cred->uid)) {
+ 		utprintf("%s: caller %d not owner %d\n", __FUNCTION__,
+ 				current->uid, dsp->owner);
+ 		return (-EACCES);
+diff -ru SUNWut.old/utdisk/utdiskctl.c SUNWut.new/utdisk/utdiskctl.c
+--- SUNWut.old/utdisk/utdiskctl.c	2009-10-20 02:46:08.000000000 +0200
++++ SUNWut.new/utdisk/utdiskctl.c	2009-12-14 17:44:10.000000000 +0100
+@@ -711,7 +711,7 @@
+ 		return (-ENOMEM);
+ 	}
+ 	/* set hardware block size */
+-	blk_queue_hardsect_size(dsp->rqp, dinfo.block_size);
++	blk_queue_logical_block_size(dsp->rqp, dinfo.block_size);
+ 
+ 	dinfo.ctlmin = dsp->ctlmin;
+ 	if (dinfo.block_size != UTDISK_HARDSECT_SIZE_BYTES) {
+diff -ru SUNWut.old/utio/utio.c SUNWut.new/utio/utio.c
+--- SUNWut.old/utio/utio.c	2009-10-20 02:46:06.000000000 +0200
++++ SUNWut.new/utio/utio.c	2009-12-14 17:38:33.000000000 +0100
+@@ -877,7 +877,7 @@
+ 	pmsg.msgtype = UTIO_MSG_WRITE;
+ 	pmsg.cmd = 0;
+ 	memset(&pmsg.args, 0, sizeof (pmsg.args));
+-	pmsg.uid = current->uid;
++	pmsg.uid = current->cred->uid;
+ 	pmsg.datasize = buf->bytes;
+ 	send_msg_to_master(sess, &pmsg);
+ 
+@@ -1017,7 +1017,7 @@
+ 	pmsg.msgtype = UTIO_MSG_READ;
+ 	pmsg.cmd = 0;
+ 	memset(&pmsg.args, 0, sizeof (pmsg.args));
+-	pmsg.uid = current->uid;
++	pmsg.uid = current->cred->uid;
+ 	pmsg.datasize = buf->bytes;
+ 	send_msg_to_master(sess, &pmsg);
+ 
+@@ -1267,7 +1267,7 @@
+ 	pmsg.magic = UTIO_MAGIC;
+ 	pmsg.version = UTIO_VERSION;
+ 	pmsg.msgtype = UTIO_MSG_IOCTL;
+-	pmsg.uid = current->uid;
++	pmsg.uid = current->cred->uid;
+ 	pmsg.datasize = 0;
+ 	memset(&pmsg.args, 0, sizeof (pmsg.args));
+ 
+@@ -1282,7 +1282,7 @@
+ 			}
+ 			memset(&pmsg, 0, sizeof (pmsg));
+ 			ret = do_getmsg_from_master(sess, &pmsg,
+-					current->uid, UTIO_MSG_IOCTL);
++					current->cred->uid, UTIO_MSG_IOCTL);
+ 			if (!ret && (pmsg.msgtype == UTIO_MSG_IOCTL) &&
+ 			    (pmsg.response == UTIO_MSG_ACK)) {
+ 				return (0);
+@@ -1308,7 +1308,7 @@
+ 
+ 			memset(&pmsg, 0, sizeof (pmsg));
+ 			ret = do_getmsg_from_master(sess, &pmsg,
+-					current->uid, UTIO_MSG_IOCTL);
++					current->cred->uid, UTIO_MSG_IOCTL);
+ 			if (!ret && (pmsg.msgtype == UTIO_MSG_IOCTL) &&
+ 			    (pmsg.response == UTIO_MSG_ACK)) {
+ 				return (0);
+@@ -1333,7 +1333,7 @@
+ 
+ 			memset(&pmsg, 0, sizeof (pmsg));
+ 			ret = do_getmsg_from_master(sess, &pmsg,
+-					current->uid, UTIO_MSG_IOCTL);
++					current->cred->uid, UTIO_MSG_IOCTL);
+ 			if (!ret && (pmsg.msgtype == UTIO_MSG_IOCTL) &&
+ 			    (pmsg.response == UTIO_MSG_ACK)) {
+ 				return (0);
+@@ -1360,7 +1360,7 @@
+ 
+ 			memset(&pmsg, 0, sizeof (pmsg));
+ 			ret = do_getmsg_from_master(sess, &pmsg,
+-					current->uid, UTIO_MSG_IOCTL);
++					current->cred->uid, UTIO_MSG_IOCTL);
+ 			if (!ret && (pmsg.msgtype == UTIO_MSG_IOCTL) &&
+ 			    (pmsg.response == UTIO_MSG_ACK)) {
+ 				return (0);
+@@ -1384,7 +1384,7 @@
+ 
+ 			memset(&pmsg, 0, sizeof (pmsg));
+ 			ret = do_getmsg_from_master(sess, &pmsg,
+-					current->uid, UTIO_MSG_IOCTL);
++					current->cred->uid, UTIO_MSG_IOCTL);
+ 			if (!ret && (pmsg.msgtype == UTIO_MSG_IOCTL) &&
+ 			    (pmsg.response == UTIO_MSG_ACK)) {
+ 				return (0);
+@@ -1405,7 +1405,7 @@
+ 
+ 			memset(&pmsg, 0, sizeof (pmsg));
+ 			ret = do_getmsg_from_master(sess, &pmsg,
+-					current->uid, UTIO_MSG_IOCTL);
++					current->cred->uid, UTIO_MSG_IOCTL);
+ 			if (!ret && (pmsg.msgtype == UTIO_MSG_IOCTL) &&
+ 			    (pmsg.response == UTIO_MSG_ACK)) {
+ 				return (put_user(pmsg.args.intval,
+@@ -1424,7 +1424,7 @@
+ 
+ 			memset(&pmsg, 0, sizeof (pmsg));
+ 			ret = do_getmsg_from_master(sess, &pmsg,
+-					current->uid, UTIO_MSG_IOCTL);
++					current->cred->uid, UTIO_MSG_IOCTL);
+ 			if (!ret && (pmsg.msgtype == UTIO_MSG_IOCTL) &&
+ 			    (pmsg.response == UTIO_MSG_ACK)) {
+ 				return (copy_to_user((struct winsize *)
+@@ -1444,7 +1444,7 @@
+ 
+ 			memset(&pmsg, 0, sizeof (pmsg));
+ 			ret = do_getmsg_from_master(sess, &pmsg,
+-					current->uid, UTIO_MSG_IOCTL);
++					current->cred->uid, UTIO_MSG_IOCTL);
+ 			if (!ret && (pmsg.msgtype == UTIO_MSG_IOCTL) &&
+ 			    (pmsg.response == UTIO_MSG_ACK)) {
+ 				return (copy_to_user((struct termios *)
+@@ -1464,7 +1464,7 @@
+ 
+ 			memset(&pmsg, 0, sizeof (pmsg));
+ 			ret = do_getmsg_from_master(sess, &pmsg,
+-					current->uid, UTIO_MSG_IOCTL);
++					current->cred->uid, UTIO_MSG_IOCTL);
+ 			if (!ret && (pmsg.msgtype == UTIO_MSG_IOCTL) &&
+ 			    (pmsg.response == UTIO_MSG_ACK)) {
+ 				return (copy_to_user((struct termio *)
+@@ -1496,7 +1496,7 @@
+ 	pmsg.magic = UTIO_MAGIC;
+ 	pmsg.version = UTIO_VERSION;
+ 	pmsg.msgtype = UTIO_MSG_IOCTL;
+-	pmsg.uid = current->uid;
++	pmsg.uid = current->cred->uid;
+ 	pmsg.datasize = 0;
+ 	memset(&pmsg.args, 0, sizeof (pmsg.args));
+ 
+@@ -1513,7 +1513,7 @@
+ 
+ 			memset(&pmsg, 0, sizeof (pmsg));
+ 			ret = do_getmsg_from_master(sess, &pmsg,
+-					current->uid, UTIO_MSG_IOCTL);
++					current->cred->uid, UTIO_MSG_IOCTL);
+ 			if (!ret && (pmsg.msgtype == UTIO_MSG_IOCTL) &&
+ 			    (pmsg.response == UTIO_MSG_ACK)) {
+ 				return (put_user(pmsg.args.intval,
+@@ -1539,7 +1539,7 @@
+ 
+ 			memset(&pmsg, 0, sizeof (pmsg));
+ 			ret = do_getmsg_from_master(sess, &pmsg,
+-					current->uid, UTIO_MSG_IOCTL);
++					current->cred->uid, UTIO_MSG_IOCTL);
+ 			if (!ret && (pmsg.msgtype == UTIO_MSG_IOCTL) &&
+ 			    (pmsg.response == UTIO_MSG_ACK)) {
+ 				return (put_user(pmsg.args.intval,
+@@ -1563,7 +1563,7 @@
+ 
+ 			memset(&pmsg, 0, sizeof (pmsg));
+ 			ret = do_getmsg_from_master(sess, &pmsg,
+-					current->uid, UTIO_MSG_IOCTL);
++					current->cred->uid, UTIO_MSG_IOCTL);
+ 			if (!ret && (pmsg.msgtype == UTIO_MSG_IOCTL) &&
+ 			    (pmsg.response == UTIO_MSG_ACK)) {
+ 				return (copy_to_user((struct timeval *)
+@@ -1602,7 +1602,7 @@
+ 	pmsg.magic = UTIO_MAGIC;
+ 	pmsg.version = UTIO_VERSION;
+ 	pmsg.msgtype = UTIO_MSG_IOCTL;
+-	pmsg.uid = current->uid;
++	pmsg.uid = current->cred->uid;
+ 	pmsg.datasize = 0;
+ 	memset(&pmsg.args, 0, sizeof (pmsg.args));
+ 
+@@ -1621,7 +1621,7 @@
+ 
+ 	memset(&pmsg, 0, sizeof (pmsg));
+ 	ret = do_getmsg_from_master(sess, &pmsg,
+-			current->uid, UTIO_MSG_IOCTL);
++			current->cred->uid, UTIO_MSG_IOCTL);
+ 	if (!ret && (pmsg.msgtype == UTIO_MSG_IOCTL) &&
+ 	    (pmsg.response == UTIO_MSG_ACK))
+ 	{
+@@ -1692,7 +1692,7 @@
+ 		DPRINTF(3, " - UTIO_GETDEVID\n");
+ 
+ 		down_write(&conn->syscall_rwsem);
+-		ret = do_newsession(conn, current->uid);
++		ret = do_newsession(conn, current->cred->uid);
+ 		up_write(&conn->syscall_rwsem);
+ 		return (ret);
+ 	}
+@@ -1713,7 +1713,7 @@
+ 		DPRINTF(3, "- UTIO_GETMSG\n");
+ 		down_read(&conn->syscall_rwsem);
+ 		ret = do_getmsg_from_slave(sess, (utio_pmsg_t *)arg,
+-			    file->f_flags & O_NONBLOCK, current->uid, 0);
++			    file->f_flags & O_NONBLOCK, current->cred->uid, 0);
+ 		if (ret < 0) {
+ 			if (is_disc(sess)) {
+ 				disc_session(file->private_data);
+@@ -1781,7 +1781,7 @@
+ 			DPRINTF(3, "- UTIO_GETMSG\n");
+ 			down_read(&conn->syscall_rwsem);
+ 			ret = do_getmsg_from_slave(sess, &parm64,
+-				    file->f_flags & O_NONBLOCK, current->uid, 1);
++				    file->f_flags & O_NONBLOCK, current->cred->uid, 1);
+ 			if (ret < 0) {
+ 				if (is_disc(sess)) {
+ 					disc_session(file->private_data);
+@@ -1861,7 +1861,7 @@
+ 	pmsg.msgtype = UTIO_MSG_OPEN;
+ 	pmsg.cmd = sessid;
+ 	memset(&pmsg.args, 0, sizeof (pmsg.args));
+-	pmsg.uid = current->uid;
++	pmsg.uid = current->cred->uid;
+ 	pmsg.datasize = 0;
+ 
+ 	/* Check the return value of send_msg_to_master */
+@@ -1870,7 +1870,7 @@
+ 	}
+ 
+ 	memset(&pmsg, 0, sizeof (pmsg));
+-	ret = do_getmsg_from_master(sess, &pmsg, current->uid,
++	ret = do_getmsg_from_master(sess, &pmsg, current->cred->uid,
+ 				    UTIO_MSG_OPEN);
+ 	if (is_disc(sess)) {
+ 		DPRINTF(3, "slave open failed\n");
+@@ -2174,14 +2174,14 @@
+ 		pmsg.msgtype = UTIO_MSG_CLOSE;
+ 		pmsg.cmd = sess->id;
+ 		memset(&pmsg.args, 0, sizeof (pmsg.args));
+-		pmsg.uid = current->uid;
++		pmsg.uid = current->cred->uid;
+ 		pmsg.datasize = 0;
+ 
+ 		ret = send_msg_to_master(sess, &pmsg);
+ 		if (!ret) {
+ 			memset(&pmsg, 0, sizeof (pmsg));
+ 			ret = do_getmsg_from_master(sess, &pmsg,
+-					current->uid, UTIO_MSG_CLOSE);
++					current->cred->uid, UTIO_MSG_CLOSE);
+ 			if (!ret && (pmsg.msgtype == UTIO_MSG_CLOSE) &&
+ 			    (pmsg.response == UTIO_MSG_ACK)) {
+ 				DPRINTF(3, "ACK received for UTIO_MSG_CLOSE\n");
