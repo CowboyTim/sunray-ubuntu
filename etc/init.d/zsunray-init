@@ -1,5 +1,7 @@
 #!/bin/sh
 
+unset _JAVA_OPTIONS
+
 NAME=sunray
 DESC="Sunray services"
 case "$1" in
