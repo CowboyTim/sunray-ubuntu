@@ -17,7 +17,8 @@
 # 1. install software needed to build our own package:
 #     64-bit:
 #       apt-get install fakeroot alien pdksh lib32stdc++6 \
-#                   libldap-2.4-2 ldap-utils tftpd gawk ia32-libs 
+#                   libldap-2.4-2 ldap-utils tftpd gawk ia32-libs \
+#                   linux-headers-2.6.32-5-amd64
 #     
 #     Ubuntu 8.04/8.10, add this too (not for 9.04):
 #       apt-get install xkb-data-legacy
@@ -28,7 +29,8 @@
 #
 #     32-bit:
 #       apt-get install fakeroot alien sun-java6-jre pdksh  \
-#                   libldap-2.4-2 ldap-utils tftpd libmotif3 gawk
+#                   libldap-2.4-2 ldap-utils tftpd libmotif3 gawk \
+#                   linux-headers-2.6.32-5-amd64
 #
 # 2. build the srss package, as a regular user:
 #     bash ./srss_install.sh <dir to srss unpack or iso mount> [4.2|4.1]
