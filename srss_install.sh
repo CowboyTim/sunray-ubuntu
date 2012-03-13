@@ -31,7 +31,7 @@
 #                   libldap-2.4-2 ldap-utils tftpd libmotif3 gawk
 #
 # 2. build the srss package, as a regular user:
-#     bash ./srss_install.sh <dir to srss unpack or iso mount>
+#     bash ./srss_install.sh <dir to srss unpack or iso mount> [4.2|4.1]
 #
 # 3. install the created srss package:
 #     dpkg -i srss*.deb
