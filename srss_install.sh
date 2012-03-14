@@ -16,32 +16,25 @@
 # 0. download the srss 4.1 linux from Sun.
 # 1. install software needed to build our own package:
 #     64-bit:
-#       apt-get install fakeroot alien pdksh lib32stdc++6 \
-#                   libldap-2.4-2 ldap-utils tftpd gawk ia32-libs \
-#                   linux-headers-2.6.32-5-amd64 ed pulseaudio
+#       apt-get install fakeroot alien build-essential linux-headers-2.6.32-5-amd64
 #     
-#     Ubuntu 8.04/8.10, add this too (not for 9.04):
-#       apt-get install xkb-data-legacy
-#
 #     Optionally, you can add different kernels. The patch for the modules that
 #     I made makes it possible that multiple kernel-versioned modules can be
 #     built. e.g. -rt,-server,-generic, all for different versions.
 #
-#     32-bit:
-#       apt-get install fakeroot alien sun-java6-jre pdksh  \
-#                   libldap-2.4-2 ldap-utils tftpd libmotif3 gawk \
-#                   linux-headers-2.6.32-5-amd64 ed pulseaudio
-#
 # 2. build the srss package, as a regular user:
 #     bash ./srss_install.sh <dir to srss unpack or iso mount> [4.2|4.1]
 #
-# 3. install the created srss package:
-#     dpkg -i srss*.deb
+# 3. install the created srss package, as root:
+#     echo "deb file:///home/test /"      > /etc/apt/sources.list.d/srss.list
+#     echo "deb http://goldy/debs/srss /" > /etc/apt/sources.list.d/srss.list
+#     apt-get update
+#     apt-get -y install srss
 #
 # 4. configure the sunray software:
 #     /opt/SUNWut/sbin/utconfig
 #     /opt/SUNWut/sbin/utadm -L on
-#     /opt/SUNWut/sbin/utadm -A 166.59.84.0  # ignore errors here
+#     /opt/SUNWut/sbin/utadm -A 192.168.1.0  # ignore errors here
 #     /opt/SUNWut/sbin/utfwadm -A -f /opt/SUNWut/lib/firmware_gui  -V -a
 #     /opt/SUNWut/sbin/utrestart
 #     /etc/init.d/zsunray-init stop
@@ -92,37 +85,6 @@
 #                         range 192.168.1.185 192.168.1.199; 
 #                 }
 #         }
-#
-#
-#
-#
-# KNOWN ISSUES:
-#
-# 1. GNOME
-# A known issue happens with the gnome-settings-daemon. Upon debugging this
-# with gdb, this has something to do with libxklavier on ubuntu 9.04 x86_64.
-# On ubuntu 8.04, something similar happens (although I didn't bother debugging
-# that).
-#
-# 2. KDE 4
-# Sadly enough, KDE 4 (and probably Qt4) uses XRENDER *alot*. As that's not
-# implemented (probably going to be as of the next release of srss), it looks
-# ugly. Even if XRENDER would be supported, it's probably going to use lot's of
-# cpu resources, and it would be a bad idea to have 50 users running KDE 4.
-# srss 4.2 (SunRay software 5) fixes XRENDER
-#
-# 3. flash (for in firefox)
-# nsppluginwrapper flash sucks. However, as that is a 32-bit flash, colors look
-# allright. The 64-bit flash is better for stability, however, red and blue
-# colors are switched. On ubuntu 9.04, this also appears to be the case I think
-# when I checked this briefly. The colormask is different as from a normal X,
-# this can be checked with xdpyinfo.
-#
-# 4. VMware's console viewer
-# colors red and blue are swapped too.
-#
-# 6. on ubuntu 9.10, use:
-#   $ sudo apt-get install gdm-2.20
 #
 
 source_dir=$1
@@ -175,6 +137,7 @@ for extra_pkg in $tmpdir/{libgdbm3*,libmotif3*,libglib1.2ldbl*,libxfont1*,libfon
     	cp -R $pkg_tmpdir/lib/* $tmpdir/opt/SUNWut/lib
     fi
     rm -rf $pkg_tmpdir
+    rm -f $extra_pkg
 done
 
 echo "Adding java..."
@@ -298,8 +261,30 @@ cd $tmpdir
 fakeroot tar czf $tmpdir/srss-${version}_10.8.tgz *
 
 echo "Making .deb..."
-fakeroot alien -d $tmpdir/srss-${version}_10.8.tgz
+fakeroot alien -g -c -d $tmpdir/srss-${version}_10.8.tgz
 
-cp $tmpdir/srss*.deb ~/
+cat > $tmpdir/srss-${version}/debian/control <<EOctrl
+Source: srss
+Section: x11
+Priority: extra
+Maintainer: root <root@whatever.com>
+
+Package: srss
+Architecture: amd64
+Depends: ${shlibs:Depends}, ed, pulseaudio, pdksh, lib32stdc++6, libldap-2.4-2, ldap-utils, gawk, ia32-libs, gdm, xkb-data, tftpd
+Conflicts: gdm3, xkb-data-legacy
+Description: SunRay server software
+ This is Oracle's SunRay server software nicely packaged into one clean debian
+ package.
+EOctrl
+(cd $tmpdir/srss-${version}/ && fakeroot debian/rules binary)
+
+mkdir -p ~/srss/
+cp $tmpdir/srss*.deb ~/srss/
+(cd ~/srss/ && dpkg-scanpackages . /dev/null| gzip -c -9 > ~/srss/Packages.gz)
+echo 'Please copy ~/srss to a webserver and configure apt on the target system like this:'
+echo
+echo 'echo "deb http://goldy/debs/srss /" > /etc/apt/sources.list.d/srss.list'
+echo 'apt-get update'
 rm -rf $tmpdir
 
