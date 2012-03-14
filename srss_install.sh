@@ -18,7 +18,7 @@
 #     64-bit:
 #       apt-get install fakeroot alien pdksh lib32stdc++6 \
 #                   libldap-2.4-2 ldap-utils tftpd gawk ia32-libs \
-#                   linux-headers-2.6.32-5-amd64
+#                   linux-headers-2.6.32-5-amd64 ed
 #     
 #     Ubuntu 8.04/8.10, add this too (not for 9.04):
 #       apt-get install xkb-data-legacy
@@ -30,7 +30,7 @@
 #     32-bit:
 #       apt-get install fakeroot alien sun-java6-jre pdksh  \
 #                   libldap-2.4-2 ldap-utils tftpd libmotif3 gawk \
-#                   linux-headers-2.6.32-5-amd64
+#                   linux-headers-2.6.32-5-amd64 ed
 #
 # 2. build the srss package, as a regular user:
 #     bash ./srss_install.sh <dir to srss unpack or iso mount> [4.2|4.1]
@@ -142,7 +142,8 @@ tmpdir=/var/tmp/srss.$$
 mkdir -p $tmpdir
 echo "Using $tmpdir"
 
-baseurl=http://fr.archive.ubuntu.com/ubuntu/pool/
+debianbase=http://ftp.us.debian.org/debian/pool
+ubuntubase=http://fr.archive.ubuntu.com/ubuntu/pool/
 
 for rpm in $source_dir/{Sun_Ray_*,Docs,Kiosk*}/Linux/Packages/*.rpm; do
     echo "Unpacking rpm $rpm"
@@ -153,16 +154,15 @@ for rpm in $source_dir/{Sun_Ray_*,Docs,Kiosk*}/Linux/Packages/*.rpm; do
              --preserve-modification-time)
 done
 
-(
-    cd $tmpdir
-    wget $baseurl/main/g/gdbm/libgdbm3_1.8.3-3_i386.deb
-    wget $baseurl/multiverse/o/openmotif/libmotif3_2.2.3-2_i386.deb
-    wget $baseurl/universe/g/glib1.2/libglib1.2ldbl_1.2.10-19build1_i386.deb
-    wget $baseurl/main/libx/libxfont/libxfont1_1.3.1-2_i386.deb
-    wget $baseurl/main/libf/libfontenc/libfontenc1_1.0.4-3_i386.deb
-)
+for pkg in $debianbase/main/g/gdbm/libgdbm3_1.8.3-10_i386.deb \
+           $ubuntubase/multiverse/o/openmotif/libmotif3_2.2.3-2_i386.deb \
+           $ubuntubase/universe/g/glib1.2/libglib1.2ldbl_1.2.10-19build1_i386.deb \
+           $debianbase/main/libx/libxfont/libxfont1_1.4.5-1_i386.deb \
+           $debianbase/main/libf/libfontenc/libfontenc1_1.1.0-1_i386.deb; do
+    (cd $tmpdir && wget $pkg || exit 1) || exit $?
+done
 
-for extra_pkg in $tmpdir/{libgdbm3_1.8.3-3_i386,libmotif3_2.2.3-2_i386,libglib1.2ldbl_1.2.10-19build1_i386,libxfont1_1.3.1-2_i386,libfontenc1_1.0.4-3_i386}.deb; do
+for extra_pkg in $tmpdir/{libgdbm3*,libmotif3*,libglib1.2ldbl*,libxfont1*,libfontenc1*}_i386.deb; do
     echo  "Adding $extra_pkg"
     pkg_tmpdir=/var/tmp/pkg_tmp_dir
     mkdir -p $pkg_tmpdir
