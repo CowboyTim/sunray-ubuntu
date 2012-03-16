@@ -97,6 +97,7 @@ fi
 if [ -z $version ]; then
     version='4.1'
 fi
+rev=3
 
 here=$(dirname $(readlink -f $0))
 
@@ -258,10 +259,10 @@ cp -R $here/{etc,opt,usr} $tmpdir
 
 echo "Making tar..."
 cd $tmpdir
-fakeroot tar czf $tmpdir/srss-${version}_10.8.tgz *
+fakeroot tar czf $tmpdir/srss-${version}-${rev}.tgz *
 
 echo "Making .deb..."
-fakeroot alien -g -c -d $tmpdir/srss-${version}_10.8.tgz
+fakeroot alien --version=${version} --bump=$rev -g -c -d $tmpdir/srss-${version}-${rev}.tgz
 
 cat > $tmpdir/srss-${version}/debian/control <<EOctrl
 Source: srss
@@ -271,8 +272,10 @@ Maintainer: root <root@whatever.com>
 
 Package: srss
 Architecture: amd64
-Depends: ${shlibs:Depends}, ed, pulseaudio, pdksh, lib32stdc++6, libldap-2.4-2, ldap-utils, gawk, ia32-libs, gdm, xkb-data, tftpd
-Conflicts: gdm3, xkb-data-legacy
+Depends: \${shlibs:Depends}, ed, pulseaudio, pdksh, lib32stdc++6, libldap-2.4-2, ldap-utils, gawk, ia32-libs, gdm, xkb-data, tftpd
+Conflicts: xkb-data-legacy
+Recommends: openbox
+Suggests: xfce, gnome, kde
 Description: SunRay server software
  This is Oracle's SunRay server software nicely packaged into one clean debian
  package.
@@ -286,5 +289,5 @@ echo 'Please copy ~/srss to a webserver and configure apt on the target system l
 echo
 echo 'echo "deb http://goldy/debs/srss /" > /etc/apt/sources.list.d/srss.list'
 echo 'apt-get update'
-rm -rf $tmpdir
+#rm -rf $tmpdir
 
