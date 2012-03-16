@@ -95,9 +95,9 @@ if [ -z $source_dir ]; then
 fi
 
 if [ -z $version ]; then
-    version='4.1'
+    version='4.2'
 fi
-rev=3
+rev=4
 
 here=$(dirname $(readlink -f $0))
 
