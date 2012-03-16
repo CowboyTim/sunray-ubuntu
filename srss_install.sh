@@ -97,7 +97,7 @@ fi
 if [ -z $version ]; then
     version='4.2'
 fi
-rev=7
+rev=8
 
 here=$(dirname $(readlink -f $0))
 
@@ -275,7 +275,7 @@ Architecture: amd64
 Depends: \${shlibs:Depends}, ed, pulseaudio, pdksh, lib32stdc++6, libldap-2.4-2, ldap-utils, gawk, ia32-libs, gdm, xkb-data, tftpd
 Conflicts: xkb-data-legacy
 Recommends: openbox
-Suggests: xfce, gnome, kde
+Suggests: xfce4, gnome, kde
 Description: SunRay server software
  This is Oracle's SunRay server software nicely packaged into one clean debian
  package.
