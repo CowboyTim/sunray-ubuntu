@@ -35,9 +35,6 @@ case "$1" in
     cp /etc/gdm/gdm.conf-sunray /etc/gdm/gdm.conf
     cp /etc/gdm/gdm.conf-sunray /etc/gdm/gdm-cdd.conf
 
-    /etc/init.d/hal stop
-    /etc/init.d/dbus stop
-
     /etc/init.d/openbsd-inetd start
     /etc/init.d/gdm restart
     /etc/init.d/utacleanup start
