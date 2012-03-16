@@ -97,7 +97,7 @@ fi
 if [ -z $version ]; then
     version='4.2'
 fi
-rev=5
+rev=6
 
 here=$(dirname $(readlink -f $0))
 
@@ -289,5 +289,5 @@ echo 'Please copy ~/srss to a webserver and configure apt on the target system l
 echo
 echo 'echo "deb http://some.repository.org/debs/srss /" > /etc/apt/sources.list.d/srss.list'
 echo 'apt-get update'
-#rm -rf $tmpdir
+rm -rf $tmpdir
 
