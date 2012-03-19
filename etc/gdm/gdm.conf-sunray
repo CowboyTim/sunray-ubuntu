@@ -7,6 +7,7 @@ RebootCommand=/bin/false
 HaltCommand=/bin/false
 SuspendCommand=/bin/false
 HibernateCommand=/bin/false
+XKeepsCrashing=/etc/opt/SUNWut/gdm/XKeepsCrashing.sunray
 SystemCommandsInMenu=
 AllowLogoutActions=
 FlexibleXServers=0
