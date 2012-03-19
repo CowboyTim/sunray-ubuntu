@@ -40,7 +40,7 @@
 #     /etc/init.d/zsunray-init stop
 #     /etc/init.d/zsunray-init start
 #
-# 5. configure a DHCP server somwhere. The reason I didn't leave this in thos
+# 5. configure a DHCP server somwhere. The reason I didn't leave this in this
 #    script somewhere is because it's not really needed, and it is usually
 #    easier to have one seperate somwhere.
 #
@@ -170,23 +170,34 @@ if [ $version = '4.2' ]; then
     chmod -x $tmpdir/opt/SUNWut/lib/prototype/Xstartup.SUNWut.prototype
 fi
 
-echo "Patching kernel modules..."
-cd $tmpdir/usr/src/SUNWut
-patch -p0 < $here/utadem.patch
-patch -p0 < $here/utdisk.patch
-patch -p0 < $here/utio.patch
-patch -p1 < $here/tims_patch.diff
-
-# FIXME: not going to work when multiple are there and for older versions of
-# the kernel, as we patch them all now
-patch -p1 < $here/new-2.6.31-kernel-module.patch
-
 echo "Building all kernel modules for all kernels we can find on the machine"
+(
 cd $tmpdir/usr
-for module_dir in src/SUNWut/*; do
-    echo "Build module $module_dir..."
-    for V in `ls /usr/src|grep 'linux-headers'`; do
-        V=$(basename $V|sed s/linux-headers-//g)
+tar cvzf src.tgz src
+for V in `ls /usr/src|grep 'linux-headers'|grep -v common`; do
+    V=$(basename $V|sed s/linux-headers-//g)
+    rm -rf $tmpdir/usr/src
+    tar xvzf src.tgz
+
+    echo "Patching kernel modules for kernel version $V..."
+    (
+        cd $tmpdir/usr/src/SUNWut
+        if [[ $V =~ ^2 ]]; then
+            patch -p0 < $here/utadem.patch
+            patch -p0 < $here/utdisk.patch
+            patch -p0 < $here/utio.patch
+            patch -p1 < $here/tims_patch.diff
+
+            # FIXME: not going to work when multiple are there and for older versions of
+            # the kernel, as we patch them all now
+            patch -p1 < $here/new-2.6.31-kernel-module.patch
+        else
+            patch -p0 < $here/new-3.2.0-kernel-module.patch
+        fi
+    )
+
+    for module_dir in src/SUNWut/*; do
+        echo "Build module $module_dir..."
         (
             cd $module_dir
             echo $module_dir, $V
@@ -200,6 +211,8 @@ for module_dir in src/SUNWut/*; do
         )
     done
 done
+rm src.tgz
+)
 
 echo "Making empty dirs..."
 mkdir -p $tmpdir/var/dt
