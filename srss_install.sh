@@ -97,7 +97,7 @@ fi
 if [ -z $version ]; then
     version='4.2'
 fi
-rev=8
+rev=9
 
 here=$(dirname $(readlink -f $0))
 
