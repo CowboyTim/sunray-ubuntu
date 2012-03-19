@@ -2,9 +2,11 @@
 
 ### BEGIN INIT INFO
 # Provides: zsunray-init
-# Required-Start: $local_fs
-# Required-Stop: $local_fs
-# Default-Start: 2 3
+# Required-Start: $local_fs $network $syslog $all
+# Required-Stop:
+# Should-Start: gdm
+# Should-Stop:
+# Default-Start: 2 3 4 5
 # Default-Stop: 0 1 6
 # Short-Description: SunRay services
 ### END INIT INFO
@@ -19,6 +21,7 @@ DESC="SunRay services"
 case "$1" in
   start)
     log_daemon_msg "Starting $DESC"
+
     gconftool-2 --direct --config-source xml:readwrite:/etc/gconf/gconf.xml.mandatory --type bool --set /desktop/gnome/lockdown/disable_user_switching true
     gconftool-2 --direct --config-source xml:readwrite:/etc/gconf/gconf.xml.mandatory --type bool --set /apps/gnome-power-manager/general/can_hibernate false
     gconftool-2 --direct --config-source xml:readwrite:/etc/gconf/gconf.xml.mandatory --type bool --set /apps/gnome-power-manager/general/can_suspend false
