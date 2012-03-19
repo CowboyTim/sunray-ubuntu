@@ -29,7 +29,7 @@
 #     echo "deb file:///home/test /"      > /etc/apt/sources.list.d/srss.list
 #     echo "deb http://goldy/debs/srss /" > /etc/apt/sources.list.d/srss.list
 #     apt-get update
-#     apt-get -y install srss
+#     apt-get -y install srss gnome hal
 #
 # 4. configure the sunray software:
 #     /opt/SUNWut/sbin/utconfig
