@@ -108,7 +108,7 @@ echo "Using $tmpdir"
 debianbase=http://ftp.us.debian.org/debian/pool
 ubuntubase=http://fr.archive.ubuntu.com/ubuntu/pool/
 
-for rpm in $source_dir/{Sun_Ray_*,Docs,Kiosk*}/Linux/Packages/*.rpm $source_dir/GDM*/Linux/Packages/gdm-*.x86_64.rpm; do
+for rpm in $source_dir/{Sun_Ray_*,Docs,Kiosk*}/Linux/Packages/*.rpm; do
     echo "Unpacking rpm $rpm"
     rpm2cpio $rpm|(cd $tmpdir; \
         cpio --extract \
@@ -118,7 +118,6 @@ for rpm in $source_dir/{Sun_Ray_*,Docs,Kiosk*}/Linux/Packages/*.rpm $source_dir/
 done
 
 for pkg in $debianbase/main/g/gdbm/libgdbm3_1.8.3-10_i386.deb \
-           $debianbase/main/g/glitz/libglitz1_0.5.6-1_amd64.deb \
            $ubuntubase/multiverse/o/openmotif/libmotif3_2.2.3-2_i386.deb \
            $ubuntubase/universe/g/glib1.2/libglib1.2ldbl_1.2.10-19build1_i386.deb \
            $debianbase/main/libx/libxfont/libxfont1_1.4.5-1_i386.deb \
@@ -126,7 +125,7 @@ for pkg in $debianbase/main/g/gdbm/libgdbm3_1.8.3-10_i386.deb \
     (cd $tmpdir && wget $pkg || exit 1) || exit $?
 done
 
-for extra_pkg in $tmpdir/{libgdbm3*,libmotif3*,libglib1.2ldbl*,libxfont1*,libfontenc1*}_i386.deb $tmpdir/libglitz1*.deb; do
+for extra_pkg in $tmpdir/{libgdbm3*,libmotif3*,libglib1.2ldbl*,libxfont1*,libfontenc1*}_i386.deb; do
     echo  "Adding $extra_pkg"
     pkg_tmpdir=/var/tmp/pkg_tmp_dir
     mkdir -p $pkg_tmpdir
@@ -219,7 +218,6 @@ echo "Making empty dirs..."
 mkdir -p $tmpdir/var/dt
 mkdir -p $tmpdir/var/opt/SUNWut/tokens
 mkdir -p $tmpdir/var/opt/SUNWut/displays
-mkdir -p $tmpdir/var/lib/gdm
 
 echo "Fixing xkb stuff..."
 (
@@ -258,10 +256,6 @@ mkdir -p $tmpdir/usr/X11R6/lib
 ln -s /etc/X11 $tmpdir/usr/X11R6/lib/X11
 ln -s /usr/lib32/libldap-2.4.so.2 $tmpdir/opt/SUNWut/lib/libldap.so.199
 ln -s /usr/lib32/liblber-2.4.so.2 $tmpdir/opt/SUNWut/lib/liblber.so.199
-ln -s /lib/x86_64-linux-gnu/libdbus-1.so.3 $tmpdir/opt/SUNWut/lib/libdbus-1.so.2
-ln -s /usr/lib/x86_64-linux-gnu/libdns_sd.so.1 $tmpdir/opt/SUNWut/lib/libdns_sd.so
-ln -s /usr/lib/libgsf-1.so.114 $tmpdir/opt/SUNWut/lib/libgsf-1.so.113
-ln -s /opt/SUNWut/lib/X11/SecurityPolicy $tmpdir/etc/opt/SUNWut/X11/SecurityPolicy
 
 echo "Making symlink for tftp. SunRay software expects /tftpboot"
 mkdir -p $tmpdir/srv/tftp
@@ -283,9 +277,6 @@ fakeroot tar czf $tmpdir/srss-${version}-${rev}.tgz *
 echo "Making .deb..."
 fakeroot alien --version=${version} --bump=$rev -g -c -d $tmpdir/srss-${version}-${rev}.tgz
 
- #/etc/X11/default-display-manager -> gdm
- # mkdir -p /var/lib/gdm
-
 cat > $tmpdir/srss-${version}/debian/control <<EOctrl
 Source: srss
 Section: x11
@@ -294,7 +285,7 @@ Maintainer: root <root@whatever.com>
 
 Package: srss
 Architecture: amd64
-Depends: \${shlibs:Depends}, ed, pulseaudio, pdksh, lib32stdc++6, libldap-2.4-2, ldap-utils, gawk, ia32-libs, xkb-data, tftpd, libavahi-compat-libdnssd1, libgsf-1-114, dbus
+Depends: \${shlibs:Depends}, ed, pulseaudio, pdksh, lib32stdc++6, libldap-2.4-2, ldap-utils, gawk, ia32-libs, gdm, xkb-data, tftpd
 Conflicts: xkb-data-legacy
 Recommends: openbox
 Suggests: xfce4, gnome, kde
