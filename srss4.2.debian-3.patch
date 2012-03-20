@@ -58,7 +58,7 @@ diff -Naur srss.orig/opt/SUNWut/lib/utgdmconfigpath srss.494/opt/SUNWut/lib/utgd
      gdm_path=`rpm -ql "gdm" | grep "custom.conf"`
      if [ $? -ne 0 ]; then
 -	status=1
-+	gdm_dir=/etc/X11/gdm/
++	gdm_dir=/etc/gdm/
      else
  	gdm_dir=${gdm_path%custom.conf}
      fi
