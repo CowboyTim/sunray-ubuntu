@@ -4,7 +4,7 @@
 # Provides: zsunray-init
 # Required-Start: $local_fs $network $syslog $all
 # Required-Stop:
-# Should-Start: gdm
+# Should-Start:
 # Should-Stop:
 # Default-Start: 2 3 4 5
 # Default-Stop: 0 1 6
@@ -35,11 +35,13 @@ case "$1" in
     touch /tmp/SUNWut/config/xconfig/Xservers
     touch /tmp/SUNWut/config/xconfig/Xconfig
 
+    
+    cp /etc/gdm/gdm.conf-sunray /usr/share/gdm/defaults.conf
+    cp /etc/gdm/gdm.conf-sunray /etc/gdm/custom.conf
     cp /etc/gdm/gdm.conf-sunray /etc/gdm/gdm.conf
-    cp /etc/gdm/gdm.conf-sunray /etc/gdm/gdm-cdd.conf
+    /etc/init.d/gdm restart
 
     /etc/init.d/openbsd-inetd start
-    /etc/init.d/gdm restart
     /etc/init.d/utacleanup start
     /etc/init.d/utds start
     /etc/init.d/utsyscfg start
@@ -56,8 +58,9 @@ case "$1" in
     /etc/init.d/utacleanup stop
     /etc/init.d/utds stop
     /etc/init.d/utsyscfg stop
-    /usr/bin/pkill -9 Xnewt
-    /usr/bin/pkill utaction
+    #/usr/bin/pkill -9 Xnewt
+    #/usr/bin/pkill utaction
+    /etc/init.d/gdm stop
 
     log_progress_msg "$DESC"
     log_end_msg 0
