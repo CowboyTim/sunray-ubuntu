@@ -26,7 +26,7 @@ UserAuthFBDir=/tmp
 UserAuthFile=.Xauthority
 
 Greeter=/usr/lib/gdm/gdmlogin
-
+#Chooser=/usr/lib/gdm/gdmchooser
 
 [security]
 AllowRoot=false
