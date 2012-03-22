@@ -1,6 +1,6 @@
 diff -ru utadem/Makefile utadem/Makefile
 --- utadem/Makefile	2009-10-20 02:46:05.000000000 +0200
-+++ utadem/Makefile	2012-03-19 14:03:44.000000000 +0100
++++ utadem/Makefile	2012-03-21 13:18:44.000000000 +0100
 @@ -5,7 +5,9 @@
  # Use is subject to license terms.
  #
@@ -50,7 +50,7 @@ diff -ru utadem/Makefile utadem/Makefile
  KOBJ = $(C_FILES:%.c=%.ko)
 diff -ru utadem/utadem.c utadem/utadem.c
 --- utadem/utadem.c	2009-10-20 02:46:05.000000000 +0200
-+++ utadem/utadem.c	2012-03-19 14:57:17.000000000 +0100
++++ utadem/utadem.c	2012-03-22 15:49:16.000000000 +0100
 @@ -9,6 +9,7 @@
  static char __attribute__ ((unused)) *_SCCSid = "@(#)utadem.c	1.31     09/05/18 SMI";
  #endif  /* defined _SCCSID */
@@ -78,7 +78,7 @@ diff -ru utadem/utadem.c utadem/utadem.c
  /*
   * utadem - Audio Device Emulation
   *
-@@ -403,12 +408,14 @@
+@@ -403,12 +408,12 @@
  
  /* the global list of active sessions (struct uta_session) */
  static LIST_HEAD(session_list);
@@ -90,12 +90,10 @@ diff -ru utadem/utadem.c utadem/utadem.c
  static unsigned long *session_bits;
 -static spinlock_t sessbits_lock = SPIN_LOCK_UNLOCKED;
 +DEFINE_SPINLOCK(sessbits_lock);
-+
-+static DEFINE_MUTEX(utadm_mutex);
  
  /* module parameters */
  static int max_sessions = 2048;	  /* Maximum number of sessions */
-@@ -455,9 +462,9 @@
+@@ -455,9 +460,9 @@
  static int daemon_write(struct file *file, const char *ubuf, size_t size);
  static unsigned int user_poll(struct file *file,
      struct poll_table_struct *wait);
@@ -107,7 +105,7 @@ diff -ru utadem/utadem.c utadem/utadem.c
      unsigned int cmd, unsigned long arg);
  
  static int oss_ioctl(struct inode *inode, struct file *file,
-@@ -1733,7 +1740,7 @@
+@@ -1733,7 +1738,7 @@
   * all the user ioctl() helper functions are open to re-entrancy - protect
   * them with conn->syscall_rwsem, if needed.
   */
@@ -116,7 +114,7 @@ diff -ru utadem/utadem.c utadem/utadem.c
  user_ioctl(struct inode *inode, struct file *file, unsigned int cmd,
      unsigned long arg)
  {
-@@ -1758,7 +1765,7 @@
+@@ -1758,7 +1763,7 @@
   * This function is re-entrant - protect each block internally with read or
   * write locking on conn->syscall_rwsem!
   */
@@ -125,7 +123,7 @@ diff -ru utadem/utadem.c utadem/utadem.c
  daemon_ioctl(struct inode *inode, struct file *file, unsigned int cmd,
      unsigned long arg)
  {
-@@ -1779,7 +1786,11 @@
+@@ -1779,7 +1784,11 @@
  		if (!capable(CAP_SYS_ADMIN))
  			return (-EPERM);
  		down_write(&conn->syscall_rwsem);
@@ -138,7 +136,7 @@ diff -ru utadem/utadem.c utadem/utadem.c
  		up_write(&conn->syscall_rwsem);
  		return (ret);
  	}
-@@ -2439,13 +2450,13 @@
+@@ -2439,13 +2448,13 @@
  	return (ret);
  }
  
@@ -156,20 +154,28 @@ diff -ru utadem/utadem.c utadem/utadem.c
  
  	DPRINTF(2, "entering %s()\n", __FUNCTION__);
  
-@@ -2467,9 +2478,9 @@
+@@ -2463,15 +2472,15 @@
+ static long
+ utadem_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ {
+-	int ret;
++	long ret;
  
  	DPRINTF(2, "entering %s()\n", __FUNCTION__);
  
 -	lock_kernel();				/* Big Kernel Lock */
 -	ret = utadem_ioctl(file->f_dentry->d_inode, file, cmd, arg);
 -	unlock_kernel();
-+        mutex_lock(&utadm_mutex);
 +	ret = utadem_ioctl(file, cmd, arg);
-+	mutex_unlock(&utadm_mutex);
++
++	DPRINTF(2, "exiting %s()\n", __FUNCTION__);
  
- 	return (long)(ret);
+-	return (long)(ret);
++	return ret;
  }
-@@ -2604,7 +2615,7 @@
+ 
+ static int
+@@ -2604,7 +2613,7 @@
  	read:		utadsp_read,
  	write:		utadsp_write,
  	poll:		utadsp_poll,
@@ -178,7 +184,7 @@ diff -ru utadem/utadem.c utadem/utadem.c
  	compat_ioctl:	utadem_compat_ioctl,
  	open:		utadsp_open,
  	release:	utadsp_release,
-@@ -2690,7 +2701,7 @@
+@@ -2690,7 +2699,7 @@
  static struct file_operations utamix_fops = {
  	owner:		THIS_MODULE,
  	llseek:		no_llseek,
@@ -189,7 +195,7 @@ diff -ru utadem/utadem.c utadem/utadem.c
  };
 diff -ru utadem/utadem.h utadem/utadem.h
 --- utadem/utadem.h	2009-10-20 02:46:05.000000000 +0200
-+++ utadem/utadem.h	2012-03-19 14:06:37.000000000 +0100
++++ utadem/utadem.h	2012-03-21 13:18:44.000000000 +0100
 @@ -14,7 +14,10 @@
  
  #if defined(CONFIG_COMPAT) || defined(CONFIG_SPARC64) || defined(CONFIG_X86_64) || defined(CONFIG_PPC64)
@@ -203,7 +209,7 @@ diff -ru utadem/utadem.h utadem/utadem.h
  
 diff -ru utdisk/Makefile utdisk/Makefile
 --- utdisk/Makefile	2009-10-20 02:46:08.000000000 +0200
-+++ utdisk/Makefile	2012-03-19 14:26:58.000000000 +0100
++++ utdisk/Makefile	2012-03-21 13:18:44.000000000 +0100
 @@ -5,7 +5,9 @@
  # Use is subject to license terms.
  #
@@ -247,7 +253,7 @@ diff -ru utdisk/Makefile utdisk/Makefile
  KOBJ = $(C_FILES:%.c=%.ko)
 diff -ru utdisk/utdisk.c utdisk/utdisk.c
 --- utdisk/utdisk.c	2009-10-20 02:46:08.000000000 +0200
-+++ utdisk/utdisk.c	2012-03-19 15:16:13.000000000 +0100
++++ utdisk/utdisk.c	2012-03-22 11:32:02.000000000 +0100
 @@ -15,6 +15,7 @@
   */
  
@@ -266,13 +272,7 @@ diff -ru utdisk/utdisk.c utdisk/utdisk.c
  #include <scsi/scsi.h>			/* command values*/
  #include <scsi/scsi_ioctl.h>		/* SCSI_IOCTL_SEND_COMMAND */
  #include <scsi/scsi_cmnd.h>		/* MAX_COMMAND_SIZE */
-@@ -41,20 +43,32 @@
- 
- /* typedefs, structs and unions */
- 
-+static DEFINE_MUTEX(utdisk_mutex);
-+
- /* static function prototypes */
+@@ -45,16 +47,26 @@
  
  static int utdisk_init(void);
  static void utdisk_exit(void);
@@ -303,7 +303,7 @@ diff -ru utdisk/utdisk.c utdisk/utdisk.c
  static int utdisk_scsi_command(utdisk_state_t *dsp, struct block_device *bdevp,
  			unsigned long arg, int flag32ptr);
  
-@@ -68,7 +82,15 @@
+@@ -68,7 +80,15 @@
  static struct block_device_operations utdisk_bd_ops = {
  	.owner =		THIS_MODULE,
  	.open =			utdisk_open,
@@ -319,7 +319,7 @@ diff -ru utdisk/utdisk.c utdisk/utdisk.c
  	.compat_ioctl =		utdisk_compat_ioctl,
  	.release =		utdisk_release,
  	.media_changed =	utdisk_media_changed,
-@@ -179,11 +201,25 @@
+@@ -179,11 +199,25 @@
  
  /* open */
  static int
@@ -345,7 +345,7 @@ diff -ru utdisk/utdisk.c utdisk/utdisk.c
  
  	if ((inodep == NULL)
  		|| (inodep->i_bdev == NULL)
-@@ -220,8 +256,12 @@
+@@ -220,8 +254,12 @@
  	check_disk_change(inodep->i_bdev);
  	utprintf("%s: minor=%d [%s] usage=%d\n",
  		__FUNCTION__, minnum,
@@ -358,7 +358,7 @@ diff -ru utdisk/utdisk.c utdisk/utdisk.c
  		dsp->opens);
  
  	return 0;	/* success */
-@@ -230,11 +270,22 @@
+@@ -230,11 +268,22 @@
  
  /* release */
  static int
@@ -381,7 +381,7 @@ diff -ru utdisk/utdisk.c utdisk/utdisk.c
  
  	if ((inodep == NULL)
  		|| (inodep->i_bdev == NULL)
-@@ -268,9 +319,17 @@
+@@ -268,9 +317,17 @@
  
  /* ioctl */
  static int
@@ -399,7 +399,7 @@ diff -ru utdisk/utdisk.c utdisk/utdisk.c
  	struct block_device	*bdevp;
  	struct gendisk		*gdp;
  	utdisk_state_t		*dsp;
-@@ -282,6 +341,10 @@
+@@ -282,6 +339,10 @@
  	char			*copy_ptr;
  	int			copy_len;
  	int			ret;
@@ -410,7 +410,7 @@ diff -ru utdisk/utdisk.c utdisk/utdisk.c
  
  	flag32ptr = (cmd & UTDISK_32BIT_PTRS);
  	cmd &= ~UTDISK_32BIT_PTRS;
-@@ -357,19 +420,34 @@
+@@ -357,19 +418,32 @@
  /*
   * ioctl called by 32bit user process into 64bit kernel
   */
@@ -429,18 +429,15 @@ diff -ru utdisk/utdisk.c utdisk/utdisk.c
  	utprintf("%s: cmd = %x\n", __FUNCTION__, cmd);
  
 -	lock_kernel();		/* Big Kernel Lock */
-+	mutex_lock(&utdisk_mutex);
 +#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,28)
  	ret = utdisk_ioctl(fp->f_dentry->d_inode, fp, (cmd | UTDISK_32BIT_PTRS),
  			arg);
 -	unlock_kernel();
--
--	return (long)(ret);
 +#else
 +	ret = utdisk_ioctl(b, fm, (cmd | UTDISK_32BIT_PTRS), arg);
 +#endif
-+	mutex_unlock(&utdisk_mutex);
-+
+ 
+-	return (long)(ret);
 +	return
 +#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,28)
 +		(long)
@@ -449,7 +446,7 @@ diff -ru utdisk/utdisk.c utdisk/utdisk.c
  }
  
  
-@@ -392,12 +470,20 @@
+@@ -392,12 +466,20 @@
  	unsigned int 		buflen;
  	int 			ret;
  	int			senselen;
@@ -473,7 +470,7 @@ diff -ru utdisk/utdisk.c utdisk/utdisk.c
  		return (-EACCES);
  	}
  
-@@ -612,7 +698,7 @@
+@@ -612,7 +694,7 @@
   * On error, call bio_endio(..., -error), but still return 0
   */
  static int
@@ -484,7 +481,7 @@ diff -ru utdisk/utdisk.c utdisk/utdisk.c
  	struct gendisk		*gdp;
 diff -ru utdisk/utdiskctl.c utdisk/utdiskctl.c
 --- utdisk/utdiskctl.c	2009-10-20 02:46:08.000000000 +0200
-+++ utdisk/utdiskctl.c	2012-03-19 15:28:07.000000000 +0100
++++ utdisk/utdiskctl.c	2012-03-22 11:32:19.000000000 +0100
 @@ -23,7 +23,8 @@
  #include <linux/init.h>			/* module entry-point macros */
  #include <linux/fs.h>			/* device entry points */
@@ -514,16 +511,15 @@ diff -ru utdisk/utdiskctl.c utdisk/utdiskctl.c
  	.compat_ioctl	= utstk_compat_ioctl,
  	.owner		= THIS_MODULE,
  };
-@@ -154,6 +154,8 @@
+@@ -154,7 +154,6 @@
  static struct block_device_operations *utdisk_bd_ops;	/* bd ops */
  static utdc_mlist_t	mlist;			/* minor number pool */
  
-+static DEFINE_MUTEX(utdiskctl_mutex);
-+
- 
+-
  /* static function definitions */
  
-@@ -537,24 +539,23 @@
+ /*
+@@ -537,24 +536,21 @@
  static long
  utstk_compat_ioctl(struct file *fp, unsigned int command, unsigned long arg)
  {
@@ -535,9 +531,7 @@ diff -ru utdisk/utdiskctl.c utdisk/utdiskctl.c
 -	ret = utstk_ioctl(fp->f_dentry->d_inode, fp,
 -					(command | UTDISK_32BIT_PTRS), arg);
 -	unlock_kernel();
-+	mutex_lock(&utdiskctl_mutex);
 +	ret = utstk_ioctl(fp, (command | UTDISK_32BIT_PTRS), arg);
-+	mutex_unlock(&utdiskctl_mutex);
  
 -	return (long)(ret);
 +	return ret;
@@ -556,7 +550,7 @@ diff -ru utdisk/utdiskctl.c utdisk/utdiskctl.c
  	minor_t		mnum = iminor(inode);
  	int		ret = 0;
  	int		flag32ptr;
-@@ -711,7 +712,7 @@
+@@ -711,7 +707,7 @@
  		return (-ENOMEM);
  	}
  	/* set hardware block size */
@@ -567,7 +561,7 @@ diff -ru utdisk/utdiskctl.c utdisk/utdiskctl.c
  	if (dinfo.block_size != UTDISK_HARDSECT_SIZE_BYTES) {
 diff -ru utdisk/utdiskctl.h utdisk/utdiskctl.h
 --- utdisk/utdiskctl.h	2009-10-20 02:46:08.000000000 +0200
-+++ utdisk/utdiskctl.h	2012-03-19 14:26:37.000000000 +0100
++++ utdisk/utdiskctl.h	2012-03-21 13:18:44.000000000 +0100
 @@ -25,15 +25,19 @@
  #include <linux/ioctl.h>
  #if defined(CONFIG_COMPAT) || defined(CONFIG_SPARC64) || defined(CONFIG_X86_64) || defined(CONFIG_PPC64)
@@ -593,7 +587,7 @@ diff -ru utdisk/utdiskctl.h utdisk/utdiskctl.h
  #endif
 diff -ru utdisk/utdisk.h utdisk/utdisk.h
 --- utdisk/utdisk.h	2009-10-20 02:46:08.000000000 +0200
-+++ utdisk/utdisk.h	2012-03-19 14:59:12.000000000 +0100
++++ utdisk/utdisk.h	2012-03-21 13:18:44.000000000 +0100
 @@ -24,13 +24,23 @@
  
  /* includes */
@@ -620,7 +614,7 @@ diff -ru utdisk/utdisk.h utdisk/utdisk.h
  #define	utprintf(args...)	printk(KERN_INFO args)
 diff -ru utio/Makefile utio/Makefile
 --- utio/Makefile	2009-10-20 02:46:06.000000000 +0200
-+++ utio/Makefile	2012-03-19 14:17:04.000000000 +0100
++++ utio/Makefile	2012-03-21 13:18:44.000000000 +0100
 @@ -5,7 +5,9 @@
  # Use is subject to license terms.
  #
@@ -670,7 +664,7 @@ diff -ru utio/Makefile utio/Makefile
  KOBJ = $(C_FILES:%.c=%.ko)
 diff -ru utio/utio.c utio/utio.c
 --- utio/utio.c	2009-10-20 02:46:06.000000000 +0200
-+++ utio/utio.c	2012-03-19 14:50:38.000000000 +0100
++++ utio/utio.c	2012-03-22 11:31:22.000000000 +0100
 @@ -9,10 +9,12 @@
  static char __attribute__ ((unused)) *_SCCSid = "@(#)utio.c	1.11	09/05/15 SMI";
  #endif	/* defined _SCCSID */
@@ -694,7 +688,7 @@ diff -ru utio/utio.c utio/utio.c
  
  /* get major number at load time */
  #define	UTIO_MAJOR	0
-@@ -152,12 +156,14 @@
+@@ -152,12 +156,12 @@
  
  /* the global list of active sessions (struct uta_session) */
  static LIST_HEAD(session_list);
@@ -706,12 +700,10 @@ diff -ru utio/utio.c utio/utio.c
  static unsigned long *session_bits;
 -static spinlock_t sessbits_lock = SPIN_LOCK_UNLOCKED;
 +DEFINE_SPINLOCK(sessbits_lock);
-+
-+static DEFINE_MUTEX(utio_mutex);
  
  /* dynamic utio major number */
  static unsigned int utio_major = UTIO_MAJOR;
-@@ -877,7 +883,11 @@
+@@ -877,7 +881,11 @@
  	pmsg.msgtype = UTIO_MSG_WRITE;
  	pmsg.cmd = 0;
  	memset(&pmsg.args, 0, sizeof (pmsg.args));
@@ -724,7 +716,7 @@ diff -ru utio/utio.c utio/utio.c
  	pmsg.datasize = buf->bytes;
  	send_msg_to_master(sess, &pmsg);
  
-@@ -1017,7 +1027,11 @@
+@@ -1017,7 +1025,11 @@
  	pmsg.msgtype = UTIO_MSG_READ;
  	pmsg.cmd = 0;
  	memset(&pmsg.args, 0, sizeof (pmsg.args));
@@ -737,7 +729,7 @@ diff -ru utio/utio.c utio/utio.c
  	pmsg.datasize = buf->bytes;
  	send_msg_to_master(sess, &pmsg);
  
-@@ -1258,16 +1272,23 @@
+@@ -1258,16 +1270,23 @@
  	struct uta_session *sess = conn->session;
  	utio_pmsg_t pmsg;
  	int ret;
@@ -762,7 +754,7 @@ diff -ru utio/utio.c utio/utio.c
  	pmsg.datasize = 0;
  	memset(&pmsg.args, 0, sizeof (pmsg.args));
  
-@@ -1282,7 +1303,7 @@
+@@ -1282,7 +1301,7 @@
  			}
  			memset(&pmsg, 0, sizeof (pmsg));
  			ret = do_getmsg_from_master(sess, &pmsg,
@@ -771,7 +763,7 @@ diff -ru utio/utio.c utio/utio.c
  			if (!ret && (pmsg.msgtype == UTIO_MSG_IOCTL) &&
  			    (pmsg.response == UTIO_MSG_ACK)) {
  				return (0);
-@@ -1308,7 +1329,7 @@
+@@ -1308,7 +1327,7 @@
  
  			memset(&pmsg, 0, sizeof (pmsg));
  			ret = do_getmsg_from_master(sess, &pmsg,
@@ -780,7 +772,7 @@ diff -ru utio/utio.c utio/utio.c
  			if (!ret && (pmsg.msgtype == UTIO_MSG_IOCTL) &&
  			    (pmsg.response == UTIO_MSG_ACK)) {
  				return (0);
-@@ -1333,7 +1354,7 @@
+@@ -1333,7 +1352,7 @@
  
  			memset(&pmsg, 0, sizeof (pmsg));
  			ret = do_getmsg_from_master(sess, &pmsg,
@@ -789,7 +781,7 @@ diff -ru utio/utio.c utio/utio.c
  			if (!ret && (pmsg.msgtype == UTIO_MSG_IOCTL) &&
  			    (pmsg.response == UTIO_MSG_ACK)) {
  				return (0);
-@@ -1360,7 +1381,7 @@
+@@ -1360,7 +1379,7 @@
  
  			memset(&pmsg, 0, sizeof (pmsg));
  			ret = do_getmsg_from_master(sess, &pmsg,
@@ -798,7 +790,7 @@ diff -ru utio/utio.c utio/utio.c
  			if (!ret && (pmsg.msgtype == UTIO_MSG_IOCTL) &&
  			    (pmsg.response == UTIO_MSG_ACK)) {
  				return (0);
-@@ -1384,7 +1405,7 @@
+@@ -1384,7 +1403,7 @@
  
  			memset(&pmsg, 0, sizeof (pmsg));
  			ret = do_getmsg_from_master(sess, &pmsg,
@@ -807,7 +799,7 @@ diff -ru utio/utio.c utio/utio.c
  			if (!ret && (pmsg.msgtype == UTIO_MSG_IOCTL) &&
  			    (pmsg.response == UTIO_MSG_ACK)) {
  				return (0);
-@@ -1405,7 +1426,7 @@
+@@ -1405,7 +1424,7 @@
  
  			memset(&pmsg, 0, sizeof (pmsg));
  			ret = do_getmsg_from_master(sess, &pmsg,
@@ -816,7 +808,7 @@ diff -ru utio/utio.c utio/utio.c
  			if (!ret && (pmsg.msgtype == UTIO_MSG_IOCTL) &&
  			    (pmsg.response == UTIO_MSG_ACK)) {
  				return (put_user(pmsg.args.intval,
-@@ -1424,7 +1445,7 @@
+@@ -1424,7 +1443,7 @@
  
  			memset(&pmsg, 0, sizeof (pmsg));
  			ret = do_getmsg_from_master(sess, &pmsg,
@@ -825,7 +817,7 @@ diff -ru utio/utio.c utio/utio.c
  			if (!ret && (pmsg.msgtype == UTIO_MSG_IOCTL) &&
  			    (pmsg.response == UTIO_MSG_ACK)) {
  				return (copy_to_user((struct winsize *)
-@@ -1444,7 +1465,7 @@
+@@ -1444,7 +1463,7 @@
  
  			memset(&pmsg, 0, sizeof (pmsg));
  			ret = do_getmsg_from_master(sess, &pmsg,
@@ -834,7 +826,7 @@ diff -ru utio/utio.c utio/utio.c
  			if (!ret && (pmsg.msgtype == UTIO_MSG_IOCTL) &&
  			    (pmsg.response == UTIO_MSG_ACK)) {
  				return (copy_to_user((struct termios *)
-@@ -1464,7 +1485,7 @@
+@@ -1464,7 +1483,7 @@
  
  			memset(&pmsg, 0, sizeof (pmsg));
  			ret = do_getmsg_from_master(sess, &pmsg,
@@ -843,7 +835,7 @@ diff -ru utio/utio.c utio/utio.c
  			if (!ret && (pmsg.msgtype == UTIO_MSG_IOCTL) &&
  			    (pmsg.response == UTIO_MSG_ACK)) {
  				return (copy_to_user((struct termio *)
-@@ -1487,16 +1508,23 @@
+@@ -1487,16 +1506,23 @@
  	struct uta_session *sess = conn->session;
  	utio_pmsg_t pmsg;
  	int ret;
@@ -868,7 +860,7 @@ diff -ru utio/utio.c utio/utio.c
  	pmsg.datasize = 0;
  	memset(&pmsg.args, 0, sizeof (pmsg.args));
  
-@@ -1513,7 +1541,7 @@
+@@ -1513,7 +1539,7 @@
  
  			memset(&pmsg, 0, sizeof (pmsg));
  			ret = do_getmsg_from_master(sess, &pmsg,
@@ -877,7 +869,7 @@ diff -ru utio/utio.c utio/utio.c
  			if (!ret && (pmsg.msgtype == UTIO_MSG_IOCTL) &&
  			    (pmsg.response == UTIO_MSG_ACK)) {
  				return (put_user(pmsg.args.intval,
-@@ -1539,7 +1567,7 @@
+@@ -1539,7 +1565,7 @@
  
  			memset(&pmsg, 0, sizeof (pmsg));
  			ret = do_getmsg_from_master(sess, &pmsg,
@@ -886,7 +878,7 @@ diff -ru utio/utio.c utio/utio.c
  			if (!ret && (pmsg.msgtype == UTIO_MSG_IOCTL) &&
  			    (pmsg.response == UTIO_MSG_ACK)) {
  				return (put_user(pmsg.args.intval,
-@@ -1563,7 +1591,7 @@
+@@ -1563,7 +1589,7 @@
  
  			memset(&pmsg, 0, sizeof (pmsg));
  			ret = do_getmsg_from_master(sess, &pmsg,
@@ -895,7 +887,7 @@ diff -ru utio/utio.c utio/utio.c
  			if (!ret && (pmsg.msgtype == UTIO_MSG_IOCTL) &&
  			    (pmsg.response == UTIO_MSG_ACK)) {
  				return (copy_to_user((struct timeval *)
-@@ -1588,6 +1616,7 @@
+@@ -1588,6 +1614,7 @@
  	compat_utio_pmsg_t pmsg32;
  	int ret;
  	struct inode *inode = file->f_dentry->d_inode;
@@ -903,7 +895,7 @@ diff -ru utio/utio.c utio/utio.c
  
  	/* only one ioctl needs conversion */
  	if (cmd != COMPAT_PPGETTIME)
-@@ -1599,10 +1628,16 @@
+@@ -1599,10 +1626,16 @@
  	 */
  	DPRINTF(2, "entering %s()\n", __FUNCTION__);
  
@@ -921,7 +913,7 @@ diff -ru utio/utio.c utio/utio.c
  	pmsg.datasize = 0;
  	memset(&pmsg.args, 0, sizeof (pmsg.args));
  
-@@ -1621,7 +1656,7 @@
+@@ -1621,7 +1654,7 @@
  
  	memset(&pmsg, 0, sizeof (pmsg));
  	ret = do_getmsg_from_master(sess, &pmsg,
@@ -930,7 +922,7 @@ diff -ru utio/utio.c utio/utio.c
  	if (!ret && (pmsg.msgtype == UTIO_MSG_IOCTL) &&
  	    (pmsg.response == UTIO_MSG_ACK))
  	{
-@@ -1675,9 +1710,16 @@
+@@ -1675,9 +1708,16 @@
  	struct uta_connect *conn = file->private_data;
  	struct uta_session *sess = conn->session;
  	int ret;
@@ -947,7 +939,7 @@ diff -ru utio/utio.c utio/utio.c
  	/* these don't require the session to exist */
  	switch (cmd) {
  	case UTIO_GETVERSION:
-@@ -1692,7 +1734,7 @@
+@@ -1692,7 +1732,7 @@
  		DPRINTF(3, " - UTIO_GETDEVID\n");
  
  		down_write(&conn->syscall_rwsem);
@@ -956,7 +948,7 @@ diff -ru utio/utio.c utio/utio.c
  		up_write(&conn->syscall_rwsem);
  		return (ret);
  	}
-@@ -1713,7 +1755,7 @@
+@@ -1713,7 +1753,7 @@
  		DPRINTF(3, "- UTIO_GETMSG\n");
  		down_read(&conn->syscall_rwsem);
  		ret = do_getmsg_from_slave(sess, (utio_pmsg_t *)arg,
@@ -965,7 +957,7 @@ diff -ru utio/utio.c utio/utio.c
  		if (ret < 0) {
  			if (is_disc(sess)) {
  				disc_session(file->private_data);
-@@ -1780,8 +1822,13 @@
+@@ -1780,8 +1820,13 @@
  		case COMPAT_UTIO_GETMSG:
  			DPRINTF(3, "- UTIO_GETMSG\n");
  			down_read(&conn->syscall_rwsem);
@@ -981,7 +973,7 @@ diff -ru utio/utio.c utio/utio.c
  			if (ret < 0) {
  				if (is_disc(sess)) {
  					disc_session(file->private_data);
-@@ -1820,6 +1867,7 @@
+@@ -1820,6 +1865,7 @@
  	struct uta_session *sess;
  	utio_pmsg_t pmsg;
  	int ret;
@@ -989,7 +981,7 @@ diff -ru utio/utio.c utio/utio.c
  
  	DPRINTF(2, "entering %s(sessid=%d, readfrom=%d, writeto=%d)\n",
  		__FUNCTION__, sessid, !!readfrom, !!writeto);
-@@ -1845,6 +1893,12 @@
+@@ -1845,6 +1891,12 @@
  		goto out_unlock;
  	}
  
@@ -1002,7 +994,7 @@ diff -ru utio/utio.c utio/utio.c
  	/* init the connection */
  	conn->session = sess;
  	conn->role = UTA_USER;
-@@ -1861,7 +1915,7 @@
+@@ -1861,7 +1913,7 @@
  	pmsg.msgtype = UTIO_MSG_OPEN;
  	pmsg.cmd = sessid;
  	memset(&pmsg.args, 0, sizeof (pmsg.args));
@@ -1011,7 +1003,7 @@ diff -ru utio/utio.c utio/utio.c
  	pmsg.datasize = 0;
  
  	/* Check the return value of send_msg_to_master */
-@@ -1870,7 +1924,7 @@
+@@ -1870,7 +1922,7 @@
  	}
  
  	memset(&pmsg, 0, sizeof (pmsg));
@@ -1020,7 +1012,7 @@ diff -ru utio/utio.c utio/utio.c
  				    UTIO_MSG_OPEN);
  	if (is_disc(sess)) {
  		DPRINTF(3, "slave open failed\n");
-@@ -2005,12 +2059,12 @@
+@@ -2005,12 +2057,12 @@
  	return (ret);
  }
  
@@ -1036,16 +1028,15 @@ diff -ru utio/utio.c utio/utio.c
  
  	DPRINTF(2, "entering %s()\n", __FUNCTION__);
  
-@@ -2041,7 +2095,7 @@
+@@ -2041,7 +2093,6 @@
  
  	DPRINTF(2, "entering %s()\n", __FUNCTION__);
  
 -	lock_kernel();
-+	mutex_lock(&utio_mutex);
  	switch (cmd) {
  
  #if defined(CONFIG_COMPAT) || defined(CONFIG_SPARC64) || defined(CONFIG_X86_64) || defined(CONFIG_PPC64)
-@@ -2057,10 +2111,10 @@
+@@ -2057,10 +2108,9 @@
  #endif	/* CONFIG_COMPAT */
  
  	default:
@@ -1054,11 +1045,10 @@ diff -ru utio/utio.c utio/utio.c
  		break;
  	}
 -	unlock_kernel();
-+	mutex_unlock(&utio_mutex);
  
  	return (ret);
  }
-@@ -2128,6 +2182,7 @@
+@@ -2128,6 +2178,7 @@
  	struct uta_session *sess;
  	utio_pmsg_t pmsg;
  	int ret;
@@ -1066,7 +1056,7 @@ diff -ru utio/utio.c utio/utio.c
  
  	DPRINTF(2, "entering %s()\n", __FUNCTION__);
  
-@@ -2166,6 +2221,13 @@
+@@ -2166,6 +2217,13 @@
  	} else if (conn->role == UTA_USER) {
  		DPRINTF(3, "disconnecting USER from session %d\n",
  			sess->id);
@@ -1080,7 +1070,7 @@ diff -ru utio/utio.c utio/utio.c
  		/* sync, no ACK required */
  		/* device_sync(sess, 0); */
  		/* tell the daemon we're gone */
-@@ -2174,14 +2236,14 @@
+@@ -2174,14 +2232,14 @@
  		pmsg.msgtype = UTIO_MSG_CLOSE;
  		pmsg.cmd = sess->id;
  		memset(&pmsg.args, 0, sizeof (pmsg.args));
@@ -1097,7 +1087,7 @@ diff -ru utio/utio.c utio/utio.c
  			if (!ret && (pmsg.msgtype == UTIO_MSG_CLOSE) &&
  			    (pmsg.response == UTIO_MSG_ACK)) {
  				DPRINTF(3, "ACK received for UTIO_MSG_CLOSE\n");
-@@ -2225,7 +2287,7 @@
+@@ -2225,7 +2283,7 @@
  	read:		utio_read,
  	write:		utio_write,
  	poll:		utio_poll,
@@ -1108,7 +1098,7 @@ diff -ru utio/utio.c utio/utio.c
  	release:	utio_release,
 diff -ru utio/utio.h utio/utio.h
 --- utio/utio.h	2009-10-20 02:46:06.000000000 +0200
-+++ utio/utio.h	2012-03-19 14:22:07.000000000 +0100
++++ utio/utio.h	2012-03-21 13:18:44.000000000 +0100
 @@ -9,7 +9,10 @@
  
  #if defined(CONFIG_COMPAT) || defined(CONFIG_SPARC64) || defined(CONFIG_X86_64) || defined(CONFIG_PPC64)
