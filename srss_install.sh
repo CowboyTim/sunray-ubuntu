@@ -298,7 +298,7 @@ Maintainer: root <root@whatever.com>
 Package: srss
 Architecture: amd64
 Depends: \${shlibs:Depends}, ed, pulseaudio, pdksh, lib32stdc++6, libldap-2.4-2, ldap-utils, gawk, ia32-libs, xkb-data, tftpd
-Conflicts: xkb-data-legacy, gdm3
+Conflicts: xkb-data-legacy
 Recommends: openbox
 Provides: gdm3
 Replaces: gdm3, gnome-control-center-data
