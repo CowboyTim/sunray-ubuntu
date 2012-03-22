@@ -101,7 +101,8 @@ rev=9
 
 here=$(dirname $(readlink -f $0))
 
-tmpdir=/var/tmp/srss.$$
+tmproot=/var/tmp/srss.$$
+tmpdir=/var/tmp/srss.$$/srss
 mkdir -p $tmpdir
 echo "Using $tmpdir"
 
@@ -121,23 +122,33 @@ for pkg in $debianbase/main/g/gdbm/libgdbm3_1.8.3-10_i386.deb \
            $ubuntubase/multiverse/o/openmotif/libmotif3_2.2.3-2_i386.deb \
            $ubuntubase/universe/g/glib1.2/libglib1.2ldbl_1.2.10-19build1_i386.deb \
            $debianbase/main/libx/libxfont/libxfont1_1.4.5-1_i386.deb \
+           $debianbase/main/g/gdm/gdm_2.20.11-4_amd64.deb \
            $debianbase/main/libf/libfontenc/libfontenc1_1.1.0-1_i386.deb; do
     (cd $tmpdir && wget $pkg || exit 1) || exit $?
 done
 
-for extra_pkg in $tmpdir/{libgdbm3*,libmotif3*,libglib1.2ldbl*,libxfont1*,libfontenc1*}_i386.deb; do
-    echo  "Adding $extra_pkg"
-    pkg_tmpdir=/var/tmp/pkg_tmp_dir
+for extra_pkg in $tmpdir/{libgdbm3*,libmotif3*,libglib1.2ldbl*,libxfont1*,libfontenc1*}_i386.deb $tmpdir/gdm_*_amd64.deb; do
+    echo "Adding $extra_pkg"
+    pkg_tmpdir=$tmproot/pkg_tmp_dir
     mkdir -p $pkg_tmpdir
+    (
     cd $pkg_tmpdir
-    fakeroot alien $extra_pkg --to-tgz
-    tar xvzf $pkg_tmpdir/*.tgz 
-    rm -f $pkg_tmpdir/*.tgz
-    cp -R $pkg_tmpdir/usr/* $tmpdir/opt/SUNWut
-    if [ -d $pkg_tmpdir/lib ]; then
-    	cp -R $pkg_tmpdir/lib/* $tmpdir/opt/SUNWut/lib
+    fakeroot alien -c -g $extra_pkg
+    if [[ $extra_pkg =~ gdm.*amd64\.deb ]]; then
+        echo "Adding GDM"
+        cp -a $pkg_tmpdir/*.orig/* $tmpdir/
+        rm -rf $pkg_tmpdir/*.orig
+        mkdir -p $tmproot/postbak
+        cp -a $pkg_tmpdir/gdm*/debian/{post,pre}* $tmproot/postbak/
+    else
+        pkg_tmpdir=$pkg_tmpdir/*.orig/
+        cp -a $pkg_tmpdir/usr/* $tmpdir/opt/SUNWut
+        if [ -d $pkg_tmpdir/lib ]; then
+            cp -a $pkg_tmpdir/lib/* $tmpdir/opt/SUNWut/lib
+        fi
     fi
-    rm -rf $pkg_tmpdir
+    )
+    rm -rf $tmproot/pkg_tmp_dir
     rm -f $extra_pkg
 done
 
@@ -228,7 +239,7 @@ echo "Fixing xkb stuff..."
         cd $tmpdir
         wget $baseurl/universe/x/xkb-data-legacy/xkb-data-legacy_1.0.1-4_all.deb
         for extra_pkg in $tmpdir/xkb-data-legacy_1.0.1-4_all.deb; do
-            pkg_tmpdir=/var/tmp/pkg_tmp_dir
+            pkg_tmpdir=$tmproot/pkg_tmp_dir
             mkdir -p $pkg_tmpdir
             cd $pkg_tmpdir
             fakeroot alien $extra_pkg --to-tgz
@@ -277,6 +288,7 @@ fakeroot tar czf $tmpdir/srss-${version}-${rev}.tgz *
 echo "Making .deb..."
 fakeroot alien --version=${version} --bump=$rev -g -c -d $tmpdir/srss-${version}-${rev}.tgz
 
+mv $tmproot/postbak/* $tmpdir/srss-${version}/debian/
 cat > $tmpdir/srss-${version}/debian/control <<EOctrl
 Source: srss
 Section: x11
@@ -286,8 +298,10 @@ Maintainer: root <root@whatever.com>
 Package: srss
 Architecture: amd64
 Depends: \${shlibs:Depends}, ed, pulseaudio, pdksh, lib32stdc++6, libldap-2.4-2, ldap-utils, gawk, ia32-libs, xkb-data, tftpd
-Conflicts: xkb-data-legacy
+Conflicts: xkb-data-legacy, gdm3
 Recommends: openbox
+Provides: gdm3
+Replaces: gdm3, gnome-control-center-data
 Suggests: xfce4, gnome, kde
 Description: SunRay server software
  This is Oracle's SunRay server software nicely packaged into one clean debian
@@ -302,5 +316,5 @@ echo 'Please copy ~/srss to a webserver and configure apt on the target system l
 echo
 echo 'echo "deb http://goldy/debs/srss /" > /etc/apt/sources.list.d/srss.list'
 echo 'apt-get update'
-rm -rf $tmpdir
+rm -rf $tmproot
 
