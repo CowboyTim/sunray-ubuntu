@@ -28,6 +28,7 @@ case "$1" in
     gconftool-2 --direct --config-source xml:readwrite:/etc/gconf/gconf.xml.mandatory --type bool --set /apps/gnome-power-manager/general/can_shutdown false
     gconftool-2 --direct --config-source xml:readwrite:/etc/gconf/gconf.xml.mandatory --type bool --set /apps/gnome-power-manager/general/can_restart false
     gconftool-2 --direct --config-source xml:readwrite:/etc/gconf/gconf.xml.mandatory --type bool --set /apps/gnome_settings_daemon/plugins/keyboard false
+    gconftool-2 --direct --config-source xml:readwrite:/etc/gconf/gconf.xml.mandatory --type bool --set /apps/nautilus/preferences/media_automount false
     gconftool-2 --direct --config-source xml:readwrite:/etc/gconf/gconf.xml.mandatory --type string --set /apps/gnome-screensaver/mode blank-only
 
     mkdir -p /tmp/SUNWut/config/xconfig/
@@ -35,6 +36,7 @@ case "$1" in
     touch /tmp/SUNWut/config/xconfig/Xservers
     touch /tmp/SUNWut/config/xconfig/Xconfig
 
+    mount -o remount,dev /tmp
     
     cp /etc/gdm/gdm.conf-sunray /usr/share/gdm/defaults.conf
     cp /etc/gdm/gdm.conf-sunray /etc/gdm/custom.conf
@@ -58,8 +60,8 @@ case "$1" in
     /etc/init.d/utacleanup stop
     /etc/init.d/utds stop
     /etc/init.d/utsyscfg stop
-    #/usr/bin/pkill -9 Xnewt
-    #/usr/bin/pkill utaction
+    for p in `pgrep Xnewt`; do kill -9 $p; done
+    for p in `pgrep utaction`; do kill -9 $p; done
     /etc/init.d/gdm stop
 
     log_progress_msg "$DESC"
