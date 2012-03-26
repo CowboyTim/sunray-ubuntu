@@ -16,7 +16,7 @@
 # 0. download the srss 4.1 linux from Sun.
 # 1. install software needed to build our own package:
 #     64-bit:
-#       apt-get install fakeroot alien build-essential linux-headers-2.6.32-5-amd64
+#       apt-get install fakeroot alien build-essential linux-headers-3.2.0-2-amd64
 #     
 #     Optionally, you can add different kernels. The patch for the modules that
 #     I made makes it possible that multiple kernel-versioned modules can be
