@@ -1,6 +1,6 @@
 diff -ru utadem/Makefile utadem/Makefile
 --- utadem/Makefile	2009-10-20 02:46:05.000000000 +0200
-+++ utadem/Makefile	2012-03-21 13:18:44.000000000 +0100
++++ utadem/Makefile	2012-03-26 17:32:43.000000000 +0200
 @@ -5,7 +5,9 @@
  # Use is subject to license terms.
  #
@@ -50,7 +50,7 @@ diff -ru utadem/Makefile utadem/Makefile
  KOBJ = $(C_FILES:%.c=%.ko)
 diff -ru utadem/utadem.c utadem/utadem.c
 --- utadem/utadem.c	2009-10-20 02:46:05.000000000 +0200
-+++ utadem/utadem.c	2012-03-22 15:49:16.000000000 +0100
++++ utadem/utadem.c	2012-03-26 17:32:43.000000000 +0200
 @@ -9,6 +9,7 @@
  static char __attribute__ ((unused)) *_SCCSid = "@(#)utadem.c	1.31     09/05/18 SMI";
  #endif  /* defined _SCCSID */
@@ -195,7 +195,7 @@ diff -ru utadem/utadem.c utadem/utadem.c
  };
 diff -ru utadem/utadem.h utadem/utadem.h
 --- utadem/utadem.h	2009-10-20 02:46:05.000000000 +0200
-+++ utadem/utadem.h	2012-03-21 13:18:44.000000000 +0100
++++ utadem/utadem.h	2012-03-26 17:32:43.000000000 +0200
 @@ -14,7 +14,10 @@
  
  #if defined(CONFIG_COMPAT) || defined(CONFIG_SPARC64) || defined(CONFIG_X86_64) || defined(CONFIG_PPC64)
@@ -209,7 +209,7 @@ diff -ru utadem/utadem.h utadem/utadem.h
  
 diff -ru utdisk/Makefile utdisk/Makefile
 --- utdisk/Makefile	2009-10-20 02:46:08.000000000 +0200
-+++ utdisk/Makefile	2012-03-21 13:18:44.000000000 +0100
++++ utdisk/Makefile	2012-03-26 17:32:43.000000000 +0200
 @@ -5,7 +5,9 @@
  # Use is subject to license terms.
  #
@@ -253,7 +253,7 @@ diff -ru utdisk/Makefile utdisk/Makefile
  KOBJ = $(C_FILES:%.c=%.ko)
 diff -ru utdisk/utdisk.c utdisk/utdisk.c
 --- utdisk/utdisk.c	2009-10-20 02:46:08.000000000 +0200
-+++ utdisk/utdisk.c	2012-03-22 11:32:02.000000000 +0100
++++ utdisk/utdisk.c	2012-03-26 17:32:43.000000000 +0200
 @@ -15,6 +15,7 @@
   */
  
@@ -319,7 +319,15 @@ diff -ru utdisk/utdisk.c utdisk/utdisk.c
  	.compat_ioctl =		utdisk_compat_ioctl,
  	.release =		utdisk_release,
  	.media_changed =	utdisk_media_changed,
-@@ -179,11 +199,25 @@
+@@ -164,6 +184,7 @@
+ 	utprintf("%s\n", __FUNCTION__);
+ 
+ 	if (utdisk_major != 0) {
++ 	        remove_proc_entry("driver/utdisk", NULL);
+ 		unregister_blkdev(utdisk_major, UTDISK_DISK_DRV_NAME);
+ 		utdisk_major = 0;
+ 		utstk_set_disk_major(utdisk_major);
+@@ -179,11 +200,25 @@
  
  /* open */
  static int
@@ -345,7 +353,7 @@ diff -ru utdisk/utdisk.c utdisk/utdisk.c
  
  	if ((inodep == NULL)
  		|| (inodep->i_bdev == NULL)
-@@ -220,8 +254,12 @@
+@@ -220,8 +255,12 @@
  	check_disk_change(inodep->i_bdev);
  	utprintf("%s: minor=%d [%s] usage=%d\n",
  		__FUNCTION__, minnum,
@@ -358,7 +366,7 @@ diff -ru utdisk/utdisk.c utdisk/utdisk.c
  		dsp->opens);
  
  	return 0;	/* success */
-@@ -230,11 +268,22 @@
+@@ -230,11 +269,22 @@
  
  /* release */
  static int
@@ -381,7 +389,7 @@ diff -ru utdisk/utdisk.c utdisk/utdisk.c
  
  	if ((inodep == NULL)
  		|| (inodep->i_bdev == NULL)
-@@ -268,9 +317,17 @@
+@@ -268,9 +318,17 @@
  
  /* ioctl */
  static int
@@ -399,7 +407,7 @@ diff -ru utdisk/utdisk.c utdisk/utdisk.c
  	struct block_device	*bdevp;
  	struct gendisk		*gdp;
  	utdisk_state_t		*dsp;
-@@ -282,6 +339,10 @@
+@@ -282,6 +340,10 @@
  	char			*copy_ptr;
  	int			copy_len;
  	int			ret;
@@ -410,7 +418,7 @@ diff -ru utdisk/utdisk.c utdisk/utdisk.c
  
  	flag32ptr = (cmd & UTDISK_32BIT_PTRS);
  	cmd &= ~UTDISK_32BIT_PTRS;
-@@ -357,19 +418,32 @@
+@@ -357,19 +419,32 @@
  /*
   * ioctl called by 32bit user process into 64bit kernel
   */
@@ -446,7 +454,7 @@ diff -ru utdisk/utdisk.c utdisk/utdisk.c
  }
  
  
-@@ -392,12 +466,20 @@
+@@ -392,12 +467,20 @@
  	unsigned int 		buflen;
  	int 			ret;
  	int			senselen;
@@ -470,7 +478,7 @@ diff -ru utdisk/utdisk.c utdisk/utdisk.c
  		return (-EACCES);
  	}
  
-@@ -612,7 +694,7 @@
+@@ -612,7 +695,7 @@
   * On error, call bio_endio(..., -error), but still return 0
   */
  static int
@@ -481,7 +489,7 @@ diff -ru utdisk/utdisk.c utdisk/utdisk.c
  	struct gendisk		*gdp;
 diff -ru utdisk/utdiskctl.c utdisk/utdiskctl.c
 --- utdisk/utdiskctl.c	2009-10-20 02:46:08.000000000 +0200
-+++ utdisk/utdiskctl.c	2012-03-22 11:32:19.000000000 +0100
++++ utdisk/utdiskctl.c	2012-03-26 17:32:43.000000000 +0200
 @@ -23,7 +23,8 @@
  #include <linux/init.h>			/* module entry-point macros */
  #include <linux/fs.h>			/* device entry points */
@@ -519,7 +527,15 @@ diff -ru utdisk/utdiskctl.c utdisk/utdiskctl.c
  /* static function definitions */
  
  /*
-@@ -537,24 +536,21 @@
+@@ -277,6 +276,7 @@
+ 	}
+ 
+ 	if (utdc_major != 0) {
++		remove_proc_entry("driver/utdiskctl", NULL);
+ 		unregister_chrdev_region(MKDEV(utdc_major,
+ 						UTDISK_MASTER_INSTANCE),
+ 					UTDISK_MAXMINOR);
+@@ -537,24 +537,21 @@
  static long
  utstk_compat_ioctl(struct file *fp, unsigned int command, unsigned long arg)
  {
@@ -550,7 +566,7 @@ diff -ru utdisk/utdiskctl.c utdisk/utdiskctl.c
  	minor_t		mnum = iminor(inode);
  	int		ret = 0;
  	int		flag32ptr;
-@@ -711,7 +707,7 @@
+@@ -711,7 +708,7 @@
  		return (-ENOMEM);
  	}
  	/* set hardware block size */
@@ -561,7 +577,7 @@ diff -ru utdisk/utdiskctl.c utdisk/utdiskctl.c
  	if (dinfo.block_size != UTDISK_HARDSECT_SIZE_BYTES) {
 diff -ru utdisk/utdiskctl.h utdisk/utdiskctl.h
 --- utdisk/utdiskctl.h	2009-10-20 02:46:08.000000000 +0200
-+++ utdisk/utdiskctl.h	2012-03-21 13:18:44.000000000 +0100
++++ utdisk/utdiskctl.h	2012-03-26 17:32:43.000000000 +0200
 @@ -25,15 +25,19 @@
  #include <linux/ioctl.h>
  #if defined(CONFIG_COMPAT) || defined(CONFIG_SPARC64) || defined(CONFIG_X86_64) || defined(CONFIG_PPC64)
@@ -587,7 +603,7 @@ diff -ru utdisk/utdiskctl.h utdisk/utdiskctl.h
  #endif
 diff -ru utdisk/utdisk.h utdisk/utdisk.h
 --- utdisk/utdisk.h	2009-10-20 02:46:08.000000000 +0200
-+++ utdisk/utdisk.h	2012-03-21 13:18:44.000000000 +0100
++++ utdisk/utdisk.h	2012-03-26 17:32:43.000000000 +0200
 @@ -24,13 +24,23 @@
  
  /* includes */
@@ -614,7 +630,7 @@ diff -ru utdisk/utdisk.h utdisk/utdisk.h
  #define	utprintf(args...)	printk(KERN_INFO args)
 diff -ru utio/Makefile utio/Makefile
 --- utio/Makefile	2009-10-20 02:46:06.000000000 +0200
-+++ utio/Makefile	2012-03-21 13:18:44.000000000 +0100
++++ utio/Makefile	2012-03-26 17:32:43.000000000 +0200
 @@ -5,7 +5,9 @@
  # Use is subject to license terms.
  #
@@ -664,7 +680,7 @@ diff -ru utio/Makefile utio/Makefile
  KOBJ = $(C_FILES:%.c=%.ko)
 diff -ru utio/utio.c utio/utio.c
 --- utio/utio.c	2009-10-20 02:46:06.000000000 +0200
-+++ utio/utio.c	2012-03-22 11:31:22.000000000 +0100
++++ utio/utio.c	2012-03-26 17:32:43.000000000 +0200
 @@ -9,10 +9,12 @@
  static char __attribute__ ((unused)) *_SCCSid = "@(#)utio.c	1.11	09/05/15 SMI";
  #endif	/* defined _SCCSID */
@@ -1098,7 +1114,7 @@ diff -ru utio/utio.c utio/utio.c
  	release:	utio_release,
 diff -ru utio/utio.h utio/utio.h
 --- utio/utio.h	2009-10-20 02:46:06.000000000 +0200
-+++ utio/utio.h	2012-03-21 13:18:44.000000000 +0100
++++ utio/utio.h	2012-03-26 17:32:43.000000000 +0200
 @@ -9,7 +9,10 @@
  
  #if defined(CONFIG_COMPAT) || defined(CONFIG_SPARC64) || defined(CONFIG_X86_64) || defined(CONFIG_PPC64)
