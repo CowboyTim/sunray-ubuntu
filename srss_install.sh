@@ -28,8 +28,10 @@
 # 3. install the created srss package, as root:
 #     echo "deb file:///home/test /"      > /etc/apt/sources.list.d/srss.list
 #     echo "deb http://goldy/debs/srss /" > /etc/apt/sources.list.d/srss.list
+#     echo "deb http://ftp.debian.org/debian/ unstable main non-free contrib"      > /etc/apt/sources.list.d/unstable.list
+#     echo "deb-src http://ftp.debian.org/debian/ unstable main non-free contrib" >> /etc/apt/sources.list.d/unstable.list
 #     apt-get update
-#     apt-get -y install srss gnome hal
+#     apt-get install srss
 #
 # 4. configure the sunray software:
 #     /opt/SUNWut/sbin/utconfig
@@ -313,6 +315,10 @@ Description: SunRay server software
  This is Oracle's SunRay server software nicely packaged into one clean debian
  package.
 EOctrl
+cat > $tmpdir/srss-${version}/debian/prerm <<EOrm
+#!/bin/sh
+rm -rf /var/dt /var/opt/SUNWut /var/log/SUNWut /etc/opt/SUNWut /var/lib/gdm
+EOrm
 (cd $tmpdir/srss-${version}/ && fakeroot debian/rules binary)
 
 mkdir -p ~/srss/
