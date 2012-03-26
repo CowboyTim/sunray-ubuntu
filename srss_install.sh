@@ -232,6 +232,7 @@ for V in `ls /usr/src|grep 'linux-headers'|grep -v common`; do
     done
 done
 rm src.tgz
+echo $KDEPS > $tmproot/kdeps
 )
 
 echo "Making empty dirs..."
@@ -297,6 +298,8 @@ fakeroot tar czf $tmpdir/srss-${version}-${rev}.tgz *
 echo "Making .deb..."
 fakeroot alien --version=${version} --bump=$rev -g -c -d $tmpdir/srss-${version}-${rev}.tgz
 
+KDEPS=`cat $tmproot/kdeps`
+
 mv $tmproot/postbak/* $tmpdir/srss-${version}/debian/
 cat > $tmpdir/srss-${version}/debian/control <<EOctrl
 Source: srss
@@ -318,7 +321,7 @@ Description: SunRay server software
 EOctrl
 cat > $tmpdir/srss-${version}/debian/prerm <<EOrm
 #!/bin/sh
-rm -rf /var/dt /var/opt/SUNWut /var/log/SUNWut /etc/opt/SUNWut /var/lib/gdm
+rm -rf /var/dt /var/opt/SUNWut /var/log/SUNWut /etc/opt/SUNWut /var/lib/gdm /etc/gdm/custom.conf /srv/tftp/Corona* /srv/tftp/SunRay*
 EOrm
 (cd $tmpdir/srss-${version}/ && fakeroot debian/rules binary)
 
