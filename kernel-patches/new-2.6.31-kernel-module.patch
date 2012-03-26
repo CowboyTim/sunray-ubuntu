@@ -1,6 +1,6 @@
 unchanged:
---- tmp/utadem/Makefile	2008-11-24 23:09:58.000000000 +0100
-+++ tmp/utadem/Makefile	2009-10-16 13:41:13.000000000 +0200
+--- utadem/Makefile	2008-11-24 23:09:58.000000000 +0100
++++ utadem/Makefile	2009-10-16 13:41:13.000000000 +0200
 @@ -5,7 +5,9 @@
  # Use is subject to license terms.
  #
@@ -49,8 +49,8 @@ unchanged:
  
  KOBJ = $(C_FILES:%.c=%.ko)
 unchanged:
---- tmp/utadem/utadem.h	2008-09-25 22:26:46.000000000 +0200
-+++ tmp/utadem/utadem.h	2008-11-24 23:15:55.000000000 +0100
+--- utadem/utadem.h	2008-09-25 22:26:46.000000000 +0200
++++ utadem/utadem.h	2008-11-24 23:15:55.000000000 +0100
 @@ -14,7 +14,10 @@
  
  #if defined(CONFIG_COMPAT) || defined(CONFIG_SPARC64) || defined(CONFIG_X86_64) || defined(CONFIG_PPC64)
@@ -63,8 +63,8 @@ unchanged:
  #endif	/* CONFIG_COMPAT */
  
 unchanged:
---- tmp/utdisk/Makefile	2008-11-24 23:24:06.000000000 +0100
-+++ tmp/utdisk/Makefile	2009-10-16 13:40:10.000000000 +0200
+--- utdisk/Makefile	2008-11-24 23:24:06.000000000 +0100
++++ utdisk/Makefile	2009-10-16 13:40:10.000000000 +0200
 @@ -5,7 +5,9 @@
  # Use is subject to license terms.
  #
@@ -107,8 +107,8 @@ unchanged:
  
  KOBJ = $(C_FILES:%.c=%.ko)
 unchanged:
---- tmp/utdisk/utdisk.c	2008-09-25 22:26:50.000000000 +0200
-+++ tmp/utdisk/utdisk.c	2008-12-01 02:37:42.000000000 +0100
+--- utdisk/utdisk.c	2008-09-25 22:26:50.000000000 +0200
++++ utdisk/utdisk.c	2008-12-01 02:37:42.000000000 +0100
 @@ -15,6 +15,7 @@
   */
  
@@ -297,8 +297,8 @@ unchanged:
  	struct block_device	*bdevp;
  	struct gendisk		*gdp;
 unchanged:
---- tmp/utdisk/utdiskctl.h	2008-09-25 22:26:50.000000000 +0200
-+++ tmp/utdisk/utdiskctl.h	2008-11-25 00:07:03.000000000 +0100
+--- utdisk/utdiskctl.h	2008-09-25 22:26:50.000000000 +0200
++++ utdisk/utdiskctl.h	2008-11-25 00:07:03.000000000 +0100
 @@ -25,15 +25,19 @@
  #include <linux/ioctl.h>
  #if defined(CONFIG_COMPAT) || defined(CONFIG_SPARC64) || defined(CONFIG_X86_64) || defined(CONFIG_PPC64)
@@ -323,8 +323,8 @@ unchanged:
  #define	_LP64	1
  #endif
 unchanged:
---- tmp/utdisk/utdisk.h	2008-09-25 22:26:50.000000000 +0200
-+++ tmp/utdisk/utdisk.h	2008-11-26 02:30:30.000000000 +0100
+--- utdisk/utdisk.h	2008-09-25 22:26:50.000000000 +0200
++++ utdisk/utdisk.h	2008-11-26 02:30:30.000000000 +0100
 @@ -24,13 +24,23 @@
  
  /* includes */
@@ -350,8 +350,8 @@ unchanged:
  #ifdef	UTDEBUG
  #define	utprintf(args...)	printk(KERN_INFO args)
 unchanged:
---- tmp/utio/Makefile	2008-11-24 23:19:52.000000000 +0100
-+++ tmp/utio/Makefile	2009-10-16 13:41:54.000000000 +0200
+--- utio/Makefile	2008-11-24 23:19:52.000000000 +0100
++++ utio/Makefile	2009-10-16 13:41:54.000000000 +0200
 @@ -5,7 +5,9 @@
  # Use is subject to license terms.
  #
@@ -400,8 +400,8 @@ unchanged:
  
  KOBJ = $(C_FILES:%.c=%.ko)
 unchanged:
---- tmp/utio/utio.h	2008-09-25 22:26:48.000000000 +0200
-+++ tmp/utio/utio.h	2008-11-24 23:20:54.000000000 +0100
+--- utio/utio.h	2008-09-25 22:26:48.000000000 +0200
++++ utio/utio.h	2008-11-24 23:20:54.000000000 +0100
 @@ -9,7 +9,10 @@
  
  #if defined(CONFIG_COMPAT) || defined(CONFIG_SPARC64) || defined(CONFIG_X86_64) || defined(CONFIG_PPC64)
@@ -413,8 +413,8 @@ unchanged:
  #include <linux/compat.h>
  #endif	/* CONFIG_COMPAT */
  
---- tmp/utadem/utadem.c	2009-10-20 02:46:05.000000000 +0200
-+++ tmp/utadem/utadem.c	2009-12-14 17:39:09.000000000 +0100
+--- utadem/utadem.c	2009-10-20 02:46:05.000000000 +0200
++++ utadem/utadem.c	2009-12-14 17:39:09.000000000 +0100
 @@ -1779,7 +1779,7 @@
  		if (!capable(CAP_SYS_ADMIN))
  			return (-EPERM);
@@ -424,8 +424,8 @@ unchanged:
  		up_write(&conn->syscall_rwsem);
  		return (ret);
  	}
---- tmp/utdisk/utdisk.c	2009-12-14 17:48:40.000000000 +0100
-+++ tmp/utdisk/utdisk.c	2009-12-14 17:39:39.000000000 +0100
+--- utdisk/utdisk.c	2009-12-14 17:48:40.000000000 +0100
++++ utdisk/utdisk.c	2009-12-14 17:39:39.000000000 +0100
 @@ -466,7 +466,7 @@
  
  	utprintf("%s: caller %d, owner %d\n", __FUNCTION__,
@@ -435,8 +435,8 @@ unchanged:
  		utprintf("%s: caller %d not owner %d\n", __FUNCTION__,
  				current->uid, dsp->owner);
  		return (-EACCES);
---- tmp/utdisk/utdiskctl.c	2009-10-20 02:46:08.000000000 +0200
-+++ tmp/utdisk/utdiskctl.c	2009-12-14 17:44:10.000000000 +0100
+--- utdisk/utdiskctl.c	2009-10-20 02:46:08.000000000 +0200
++++ utdisk/utdiskctl.c	2009-12-14 17:44:10.000000000 +0100
 @@ -711,7 +711,7 @@
  		return (-ENOMEM);
  	}
@@ -446,8 +446,8 @@ unchanged:
  
  	dinfo.ctlmin = dsp->ctlmin;
  	if (dinfo.block_size != UTDISK_HARDSECT_SIZE_BYTES) {
---- tmp/utio/utio.c	2009-10-20 02:46:06.000000000 +0200
-+++ tmp/utio/utio.c	2009-12-14 17:38:33.000000000 +0100
+--- utio/utio.c	2009-10-20 02:46:06.000000000 +0200
++++ utio/utio.c	2009-12-14 17:38:33.000000000 +0100
 @@ -877,7 +877,7 @@
  	pmsg.msgtype = UTIO_MSG_WRITE;
  	pmsg.cmd = 0;

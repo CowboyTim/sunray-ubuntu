@@ -203,7 +203,7 @@ for V in `ls /usr/src|grep 'linux-headers'|grep -v common`; do
     (
         cd $tmpdir/usr/src/SUNWut
         if [[ $V =~ ^2 ]]; then
-            patch -p1 < $here/kernel-patches/new-2.6.31-kernel-module.patch
+            patch -p0 < $here/kernel-patches/new-2.6.31-kernel-module.patch
         else
             patch -p0 < $here/kernel-patches/new-3.2.0-kernel-module.patch
         fi
