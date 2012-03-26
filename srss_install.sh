@@ -185,8 +185,14 @@ echo "Building all kernel modules for all kernels we can find on the machine"
 (
 cd $tmpdir/usr
 tar cvzf src.tgz src
+KDEPS=""
 for V in `ls /usr/src|grep 'linux-headers'|grep -v common`; do
     V=$(basename $V|sed s/linux-headers-//g)
+    if [ -z "$KDEPS" ]; then
+        KDEPS="linux-image-$V"
+    else
+        KDEPS="$KDEPS | linux-image-$V"
+    fi
     rm -rf $tmpdir/usr/src
     tar xvzf src.tgz
 
@@ -297,11 +303,11 @@ Maintainer: root <root@whatever.com>
 
 Package: srss
 Architecture: amd64
-Depends: \${shlibs:Depends}, ed, pulseaudio, pdksh, lib32stdc++6, libldap-2.4-2, ldap-utils, gawk, ia32-libs, xkb-data, tftpd
-Conflicts: xkb-data-legacy
+Depends: \${shlibs:Depends}, ed, pulseaudio, pdksh, lib32stdc++6, libldap-2.4-2, ldap-utils, gawk, ia32-libs, xkb-data, tftpd, $KDEPS
+Conflicts: xkb-data-legacy, gdm, xdm
 Recommends: openbox
-Provides: gdm3
-Replaces: gdm3, gnome-control-center-data
+Provides: gdm3, gdm
+Replaces: gdm3, gdm, gnome-control-center-data
 Suggests: xfce4, gnome, kde
 Description: SunRay server software
  This is Oracle's SunRay server software nicely packaged into one clean debian
