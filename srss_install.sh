@@ -32,6 +32,7 @@
 #     echo "deb-src http://ftp.debian.org/debian/ unstable main non-free contrib" >> /etc/apt/sources.list.d/unstable.list
 #     apt-get update
 #     apt-get install srss
+#     update-rc.d zsunray-init enable  3 5
 #
 # 4. configure the sunray software:
 #     /opt/SUNWut/sbin/utconfig
