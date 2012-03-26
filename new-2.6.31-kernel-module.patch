@@ -1,6 +1,420 @@
-diff -ru SUNWut.old/utadem/utadem.c SUNWut.new/utadem/utadem.c
---- SUNWut.old/utadem/utadem.c	2009-10-20 02:46:05.000000000 +0200
-+++ SUNWut.new/utadem/utadem.c	2009-12-14 17:39:09.000000000 +0100
+unchanged:
+--- tmp/utadem/Makefile	2008-11-24 23:09:58.000000000 +0100
++++ tmp/utadem/Makefile	2009-10-16 13:41:13.000000000 +0200
+@@ -5,7 +5,9 @@
+ # Use is subject to license terms.
+ #
+ 
+-VERSION = $(shell uname -r)
++ifeq ($(VERSION),)
++	VERSION = $(shell uname -r)
++endif
+ ISABITS_CMD = case "`/bin/uname -m`" in x86_64) echo 64;; i?86*|i86*) echo 32;; esac
+ ISAINFO = $(shell $(ISABITS_CMD))
+ ISA32_SPECIFIC_CPPFLAGS=-m32 -D__WORDSIZE=32
+@@ -23,16 +25,16 @@
+ 
+ COBJ = $(C_FILES:%.c=%.o)
+ 
+-CFLAGS += -Wstrict-prototypes
+-CFLAGS += -O
+-CFLAGS += -fno-strict-aliasing
+-CFLAGS += -mpreferred-stack-boundary=4
+-#CFLAGS += -march=`uname -m`
+-CFLAGS += -falign-functions=4
+-CFLAGS += -D_SCCSID
+-CFLAGS += -Wall
+-CFLAGS += -Wno-unknown-pragmas
+-CFLAGS += -DUTDEBUG
++EXTRA_CFLAGS += -Wstrict-prototypes
++EXTRA_CFLAGS += -O
++EXTRA_CFLAGS += -fno-strict-aliasing
++EXTRA_CFLAGS += -mpreferred-stack-boundary=4
++#EXTRA_CFLAGS += -march=`uname -m`
++EXTRA_CFLAGS += -falign-functions=4
++EXTRA_CFLAGS += -D_SCCSID
++EXTRA_CFLAGS += -Wall
++EXTRA_CFLAGS += -Wno-unknown-pragmas
++EXTRA_CFLAGS += -DUTDEBUG
+ 
+ obj-m := $(COBJ)
+ 
+@@ -40,7 +42,7 @@
+ 
+ # make invoked directly
+ 
+-KDIR	:= /lib/modules/$(shell uname -r)/build
++KDIR	:= /lib/modules/$(VERSION)/build
+ PWD	:= $(shell pwd)
+ 
+ KOBJ = $(C_FILES:%.c=%.ko)
+unchanged:
+--- tmp/utadem/utadem.h	2008-09-25 22:26:46.000000000 +0200
++++ tmp/utadem/utadem.h	2008-11-24 23:15:55.000000000 +0100
+@@ -14,7 +14,10 @@
+ 
+ #if defined(CONFIG_COMPAT) || defined(CONFIG_SPARC64) || defined(CONFIG_X86_64) || defined(CONFIG_PPC64)
+ #include <asm/uaccess.h>
++#include <linux/version.h>
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,22)
+ #include <linux/ioctl32.h>
++#endif
+ #include <linux/compat.h>
+ #endif	/* CONFIG_COMPAT */
+ 
+unchanged:
+--- tmp/utdisk/Makefile	2008-11-24 23:24:06.000000000 +0100
++++ tmp/utdisk/Makefile	2009-10-16 13:40:10.000000000 +0200
+@@ -5,7 +5,9 @@
+ # Use is subject to license terms.
+ #
+ 
+-VERSION = $(shell uname -r)
++ifeq ($(VERSION),)
++	VERSION = $(shell uname -r)
++endif
+ ISABITS_CMD = case "`/bin/uname -m`" in x86_64) echo 64;; i?86*|i86*) echo 32;; esac
+ ISAINFO = $(shell $(ISABITS_CMD))
+ ISA32_SPECIFIC_CPPFLAGS=-m32 -D__WORDSIZE=32
+@@ -25,13 +27,13 @@
+ 
+ COBJ = $(C_FILES:%.c=%.o)
+ 
+-CFLAGS += -Wstrict-prototypes
+-CFLAGS += -O
+-CFLAGS += -fno-strict-aliasing
+-CFLAGS += -mpreferred-stack-boundary=4
+-CFLAGS += -falign-functions=4
+-CFLAGS += -Wall
+-#CFLAGS += -DUTDEBUG
++EXTRA_CFLAGS += -Wstrict-prototypes
++EXTRA_CFLAGS += -O
++EXTRA_CFLAGS += -fno-strict-aliasing
++EXTRA_CFLAGS += -mpreferred-stack-boundary=4
++EXTRA_CFLAGS += -falign-functions=4
++EXTRA_CFLAGS += -Wall
++#EXTRA_CFLAGS += -DUTDEBUG
+ 
+ obj-m := $(COBJ)
+ 
+@@ -39,7 +41,7 @@
+ 
+ # make invoked directly
+ 
+-KDIR	:= /lib/modules/$(shell uname -r)/build
++KDIR	:= /lib/modules/$(VERSION)/build
+ PWD	:= $(shell pwd)
+ 
+ KOBJ = $(C_FILES:%.c=%.ko)
+unchanged:
+--- tmp/utdisk/utdisk.c	2008-09-25 22:26:50.000000000 +0200
++++ tmp/utdisk/utdisk.c	2008-12-01 02:37:42.000000000 +0100
+@@ -15,6 +15,7 @@
+  */
+ 
+ /* includes */
++#include <linux/version.h>
+ #include <linux/module.h>		/* module macros */
+ #include <linux/blkdev.h>		/* blk_ functions */
+ #include <linux/hdreg.h>		/* HDIO */
+@@ -45,16 +46,26 @@
+ 
+ static int utdisk_init(void);
+ static void utdisk_exit(void);
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,28)
+ static int utdisk_open(struct inode *inodep, struct file *fp);
+ static int utdisk_release(struct inode *inodep, struct file *fp);
+-static int utdisk_media_changed(struct gendisk *gdp);
+-static int utdisk_revalidate_disk(struct gendisk *gdp);
+-static int utdisk_getgeo(struct block_device *bdevp, struct hd_geometry *geo);
+ static int utdisk_ioctl(struct inode *inodep, struct file *fp,
+ 			unsigned int cmd, unsigned long arg);
+ static long utdisk_compat_ioctl(struct file *fp,
+ 			unsigned int cmd, unsigned long arg);
+-static int utdisk_make_request(request_queue_t *q, struct bio *bio);
++#else /* LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,28) */
++static int utdisk_open(struct block_device *, fmode_t);
++static int utdisk_release(struct gendisk *, fmode_t);
++static int utdisk_ioctl(struct block_device *, fmode_t,
++			unsigned int cmd, unsigned long arg);
++static int utdisk_compat_ioctl(struct block_device *, fmode_t,
++			unsigned int cmd, unsigned long arg);
++#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,28) */
++static int utdisk_media_changed(struct gendisk *gdp);
++static int utdisk_revalidate_disk(struct gendisk *gdp);
++
++static int utdisk_getgeo(struct block_device *bdevp, struct hd_geometry *geo);
++static int utdisk_make_request(struct request_queue *q, struct bio *bio);
+ static int utdisk_scsi_command(utdisk_state_t *dsp, struct block_device *bdevp,
+ 			unsigned long arg, int flag32ptr);
+ 
+@@ -68,7 +79,11 @@
+ static struct block_device_operations utdisk_bd_ops = {
+ 	.owner =		THIS_MODULE,
+ 	.open =			utdisk_open,
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,28)
+ 	.ioctl =		utdisk_ioctl,
++#else
++	.locked_ioctl =		utdisk_ioctl,
++#endif
+ 	.compat_ioctl =		utdisk_compat_ioctl,
+ 	.release =		utdisk_release,
+ 	.media_changed =	utdisk_media_changed,
+@@ -179,11 +194,25 @@
+ 
+ /* open */
+ static int
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,28)
+ utdisk_open(struct inode *inodep, struct file *fp)
+ {
++#else
++utdisk_open(struct block_device *b, fmode_t fm)
++{
++	struct inode tmpinode;
++	struct inode *inodep = &tmpinode;
++	struct file tmpfile;
++	struct file *fp = &tmpfile;
++#endif
+ 	struct gendisk	*gdp;
+ 	utdisk_state_t	*dsp;
+ 	minor_t		minnum;
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,28)
++	inodep->i_bdev = b;
++	inodep->i_rdev = b->bd_dev;
++	fp->f_mode = fm;
++#endif
+ 
+ 	if ((inodep == NULL)
+ 		|| (inodep->i_bdev == NULL)
+@@ -220,8 +249,12 @@
+ 	check_disk_change(inodep->i_bdev);
+ 	utprintf("%s: minor=%d [%s] usage=%d\n",
+ 		__FUNCTION__, minnum,
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,28)
+ 		((char *)(fp->f_dentry->d_name.name)
+ 				? (char *)(fp->f_dentry->d_name.name) : "null"),
++#else
++		"null",
++#endif
+ 		dsp->opens);
+ 
+ 	return 0;	/* success */
+@@ -230,11 +263,22 @@
+ 
+ /* release */
+ static int
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,28)
+ utdisk_release(struct inode *inodep, struct file *fp)
+ {
++#else
++utdisk_release(struct gendisk *gd, fmode_t fm)
++{
++	struct inode tmpinode;
++	struct inode *inodep = &tmpinode;
++#endif
+ 	struct gendisk	*gdp;
+ 	utdisk_state_t	*dsp;
+ 	minor_t		minnum;
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,28)
++	inodep->i_bdev = bdget_disk(gd, 0);
++	inodep->i_rdev = disk_devt(gd);
++#endif
+ 
+ 	if ((inodep == NULL)
+ 		|| (inodep->i_bdev == NULL)
+@@ -268,9 +312,17 @@
+ 
+ /* ioctl */
+ static int
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,28)
+ utdisk_ioctl(struct inode *inodep, struct file *fp, unsigned int cmd,
+ 	unsigned long arg)
+ {
++#else
++utdisk_ioctl(struct block_device *b, fmode_t fm,
++	unsigned int cmd, unsigned long arg)
++{
++	struct inode tmpinode;
++	struct inode *inodep = &tmpinode;
++#endif
+ 	struct block_device	*bdevp;
+ 	struct gendisk		*gdp;
+ 	utdisk_state_t		*dsp;
+@@ -282,6 +334,10 @@
+ 	char			*copy_ptr;
+ 	int			copy_len;
+ 	int			ret;
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,28)
++	inodep->i_bdev = b;
++	inodep->i_rdev = b->bd_dev;
++#endif
+ 
+ 	flag32ptr = (cmd & UTDISK_32BIT_PTRS);
+ 	cmd &= ~UTDISK_32BIT_PTRS;
+@@ -357,19 +413,34 @@
+ /*
+  * ioctl called by 32bit user process into 64bit kernel
+  */
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,28)
+ static long
+ utdisk_compat_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
+ {
++#else
++static int
++utdisk_compat_ioctl(struct block_device *b, fmode_t fm,
++	unsigned int cmd, unsigned long arg)
++{
++#endif
+ 	int	ret;
+ 
+ 	utprintf("%s: cmd = %x\n", __FUNCTION__, cmd);
+ 
+ 	lock_kernel();		/* Big Kernel Lock */
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,28)
+ 	ret = utdisk_ioctl(fp->f_dentry->d_inode, fp, (cmd | UTDISK_32BIT_PTRS),
+ 			arg);
++#else
++	ret = utdisk_ioctl(b, fm, (cmd | UTDISK_32BIT_PTRS), arg);
++#endif
+ 	unlock_kernel();
+ 
+-	return (long)(ret);
++	return
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,28)
++		(long)
++#endif
++		(ret);
+ }
+ 
+ 
+@@ -612,7 +683,7 @@
+  * On error, call bio_endio(..., -error), but still return 0
+  */
+ static int
+-utdisk_make_request(request_queue_t *qp, struct bio *biop)
++utdisk_make_request(struct request_queue *qp, struct bio *biop)
+ {
+ 	struct block_device	*bdevp;
+ 	struct gendisk		*gdp;
+unchanged:
+--- tmp/utdisk/utdiskctl.h	2008-09-25 22:26:50.000000000 +0200
++++ tmp/utdisk/utdiskctl.h	2008-11-25 00:07:03.000000000 +0100
+@@ -25,15 +25,19 @@
+ #include <linux/ioctl.h>
+ #if defined(CONFIG_COMPAT) || defined(CONFIG_SPARC64) || defined(CONFIG_X86_64) || defined(CONFIG_PPC64)
+ #include <asm/uaccess.h>
++#include <linux/version.h>
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,22)
+ #include <linux/ioctl32.h>
++#endif
+ #include <linux/compat.h>
+ #endif	/* CONFIG_COMPAT */
+ 
+ /* macro and constant definitions */
+-#ifndef __WORDSIZE
+-#error __WORDSIZE not defined
++//#include <asm/types.h>
++#if !defined(BITS_PER_LONG)
++#error BITS_PER_LONG not defined
+ #endif
+-#if __WORDSIZE == 64
++#if BITS_PER_LONG == 64
+ #ifndef _LP64
+ #define	_LP64	1
+ #endif
+unchanged:
+--- tmp/utdisk/utdisk.h	2008-09-25 22:26:50.000000000 +0200
++++ tmp/utdisk/utdisk.h	2008-11-26 02:30:30.000000000 +0100
+@@ -24,13 +24,23 @@
+ 
+ /* includes */
+ #include <linux/types.h>			/* integer types */
++#include <linux/version.h>
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,26)
+ #include <asm/semaphore.h>			/* struct semaphore */
++#else
++#include <linux/semaphore.h>			/* struct semaphore */
++#endif
+ #include <linux/blkdev.h>			/* make_request_fn */
+ #include <linux/cdev.h>				/* struct cdev */
+ #include <linux/wait.h>				/* wait_queue_head_t */
+ #include "utdiskctl.h"				/* minor_t */
+ 
+ /* macro and constant definitions */
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,24)
++# define bio_endio(b, s, e) bio_endio((b), (s), (e));
++#else
++# define bio_endio(b, s, e) bio_endio((b), (e));
++#endif
+ 
+ #ifdef	UTDEBUG
+ #define	utprintf(args...)	printk(KERN_INFO args)
+unchanged:
+--- tmp/utio/Makefile	2008-11-24 23:19:52.000000000 +0100
++++ tmp/utio/Makefile	2009-10-16 13:41:54.000000000 +0200
+@@ -5,7 +5,9 @@
+ # Use is subject to license terms.
+ #
+ 
+-VERSION = $(shell uname -r)
++ifeq ($(VERSION),)
++	VERSION = $(shell uname -r)
++endif
+ ISABITS_CMD = case "`/bin/uname -m`" in x86_64) echo 64;; i?86*|i86*) echo 32;; esac
+ ISAINFO = $(shell $(ISABITS_CMD))
+ ISA32_SPECIFIC_CPPFLAGS=-m32 -D__WORDSIZE=32
+@@ -23,16 +25,16 @@
+ 
+ COBJ = $(C_FILES:%.c=%.o)
+ 
+-CFLAGS += -Wstrict-prototypes
+-CFLAGS += -O
+-CFLAGS += -fno-strict-aliasing
+-CFLAGS += -mpreferred-stack-boundary=4
+-#CFLAGS += -march=`uname -m`
+-CFLAGS += -falign-functions=4
+-CFLAGS += -D_SCCSID
+-CFLAGS += -Wall
+-CFLAGS += -Wno-unknown-pragmas
+-CFLAGS += -DUTDEBUG
++EXTRA_CFLAGS += -Wstrict-prototypes
++EXTRA_CFLAGS += -O
++EXTRA_CFLAGS += -fno-strict-aliasing
++EXTRA_CFLAGS += -mpreferred-stack-boundary=4
++#EXTRA_CFLAGS += -march=`uname -m`
++EXTRA_CFLAGS += -falign-functions=4
++EXTRA_CFLAGS += -D_SCCSID
++EXTRA_CFLAGS += -Wall
++EXTRA_CFLAGS += -Wno-unknown-pragmas
++EXTRA_CFLAGS += -DUTDEBUG
+ 
+ obj-m := $(COBJ)
+ 
+@@ -40,7 +42,7 @@
+ 
+ # make invoked directly
+ 
+-KDIR	:= /lib/modules/$(shell uname -r)/build
++KDIR	:= /lib/modules/$(VERSION)/build
+ PWD	:= $(shell pwd)
+ 
+ KOBJ = $(C_FILES:%.c=%.ko)
+unchanged:
+--- tmp/utio/utio.h	2008-09-25 22:26:48.000000000 +0200
++++ tmp/utio/utio.h	2008-11-24 23:20:54.000000000 +0100
+@@ -9,7 +9,10 @@
+ 
+ #if defined(CONFIG_COMPAT) || defined(CONFIG_SPARC64) || defined(CONFIG_X86_64) || defined(CONFIG_PPC64)
+ #include <asm/uaccess.h>
++#include <linux/version.h>
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,22)
+ #include <linux/ioctl32.h>
++#endif
+ #include <linux/compat.h>
+ #endif	/* CONFIG_COMPAT */
+ 
+--- tmp/utadem/utadem.c	2009-10-20 02:46:05.000000000 +0200
++++ tmp/utadem/utadem.c	2009-12-14 17:39:09.000000000 +0100
 @@ -1779,7 +1779,7 @@
  		if (!capable(CAP_SYS_ADMIN))
  			return (-EPERM);
@@ -10,9 +424,8 @@ diff -ru SUNWut.old/utadem/utadem.c SUNWut.new/utadem/utadem.c
  		up_write(&conn->syscall_rwsem);
  		return (ret);
  	}
-diff -ru SUNWut.old/utdisk/utdisk.c SUNWut.new/utdisk/utdisk.c
---- SUNWut.old/utdisk/utdisk.c	2009-12-14 17:48:40.000000000 +0100
-+++ SUNWut.new/utdisk/utdisk.c	2009-12-14 17:39:39.000000000 +0100
+--- tmp/utdisk/utdisk.c	2009-12-14 17:48:40.000000000 +0100
++++ tmp/utdisk/utdisk.c	2009-12-14 17:39:39.000000000 +0100
 @@ -466,7 +466,7 @@
  
  	utprintf("%s: caller %d, owner %d\n", __FUNCTION__,
@@ -22,9 +435,8 @@ diff -ru SUNWut.old/utdisk/utdisk.c SUNWut.new/utdisk/utdisk.c
  		utprintf("%s: caller %d not owner %d\n", __FUNCTION__,
  				current->uid, dsp->owner);
  		return (-EACCES);
-diff -ru SUNWut.old/utdisk/utdiskctl.c SUNWut.new/utdisk/utdiskctl.c
---- SUNWut.old/utdisk/utdiskctl.c	2009-10-20 02:46:08.000000000 +0200
-+++ SUNWut.new/utdisk/utdiskctl.c	2009-12-14 17:44:10.000000000 +0100
+--- tmp/utdisk/utdiskctl.c	2009-10-20 02:46:08.000000000 +0200
++++ tmp/utdisk/utdiskctl.c	2009-12-14 17:44:10.000000000 +0100
 @@ -711,7 +711,7 @@
  		return (-ENOMEM);
  	}
@@ -34,9 +446,8 @@ diff -ru SUNWut.old/utdisk/utdiskctl.c SUNWut.new/utdisk/utdiskctl.c
  
  	dinfo.ctlmin = dsp->ctlmin;
  	if (dinfo.block_size != UTDISK_HARDSECT_SIZE_BYTES) {
-diff -ru SUNWut.old/utio/utio.c SUNWut.new/utio/utio.c
---- SUNWut.old/utio/utio.c	2009-10-20 02:46:06.000000000 +0200
-+++ SUNWut.new/utio/utio.c	2009-12-14 17:38:33.000000000 +0100
+--- tmp/utio/utio.c	2009-10-20 02:46:06.000000000 +0200
++++ tmp/utio/utio.c	2009-12-14 17:38:33.000000000 +0100
 @@ -877,7 +877,7 @@
  	pmsg.msgtype = UTIO_MSG_WRITE;
  	pmsg.cmd = 0;

@@ -203,13 +203,6 @@ for V in `ls /usr/src|grep 'linux-headers'|grep -v common`; do
     (
         cd $tmpdir/usr/src/SUNWut
         if [[ $V =~ ^2 ]]; then
-            patch -p0 < $here/utadem.patch
-            patch -p0 < $here/utdisk.patch
-            patch -p0 < $here/utio.patch
-            patch -p1 < $here/tims_patch.diff
-
-            # FIXME: not going to work when multiple are there and for older versions of
-            # the kernel, as we patch them all now
             patch -p1 < $here/new-2.6.31-kernel-module.patch
         else
             patch -p0 < $here/new-3.2.0-kernel-module.patch
