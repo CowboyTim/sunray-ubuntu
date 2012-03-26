@@ -175,10 +175,10 @@ rm $tmpdir/usr/$java_install_file
 echo "Patching... SunRay /opt/SUNWut software"
 cd $tmpdir/opt/SUNWut
 if [ $version = '4.1' ]; then
-    patch -p3 < $here/srss4.1.debian-3.patch
+    patch -p3 < $here/ssrss-patches/rss4.1.debian-3.patch
 fi
 if [ $version = '4.2' ]; then
-    patch -p3 < $here/srss4.2.debian-3.patch
+    patch -p3 < $here/srss-patches/srss4.2.debian-3.patch
     echo "Xstartup helper must not be +x, as it's a ksh script, being"
     echo "sourced by a sh program else, see /etc/opt/SUNWut/gdm/SunRayPreSession/Default"
     chmod -x $tmpdir/opt/SUNWut/lib/prototype/Xstartup.SUNWut.prototype
@@ -203,9 +203,9 @@ for V in `ls /usr/src|grep 'linux-headers'|grep -v common`; do
     (
         cd $tmpdir/usr/src/SUNWut
         if [[ $V =~ ^2 ]]; then
-            patch -p1 < $here/new-2.6.31-kernel-module.patch
+            patch -p1 < $here/kernel-patches/new-2.6.31-kernel-module.patch
         else
-            patch -p0 < $here/new-3.2.0-kernel-module.patch
+            patch -p0 < $here/kernel-patches/new-3.2.0-kernel-module.patch
         fi
     )
 
