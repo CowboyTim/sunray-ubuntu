@@ -27,7 +27,7 @@
 #
 # 3. install the created srss package, as root:
 #     echo "deb file:///home/test /"      > /etc/apt/sources.list.d/srss.list
-#     echo "deb http://goldy/debs/srss /" > /etc/apt/sources.list.d/srss.list
+#     echo "deb http://some.repository.org/debs/srss /" > /etc/apt/sources.list.d/srss.list
 #     echo "deb http://ftp.debian.org/debian/ unstable main non-free contrib"      > /etc/apt/sources.list.d/unstable.list
 #     echo "deb-src http://ftp.debian.org/debian/ unstable main non-free contrib" >> /etc/apt/sources.list.d/unstable.list
 #     apt-get update
