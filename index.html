@@ -71,14 +71,16 @@ The build script makes a correct Packages.gz and deb file in ~/srss. One can
 add this as an apt repository or copy this over to a webserver and add that as
 a repository:
 <pre>
-    $ sudo echo "deb file:///home/test /" &gt; /etc/apt/sources.list.d/srss.list 
+    $ sudo echo "deb file:///home/test /" \
+        &gt; /etc/apt/sources.list.d/srss.list 
 </pre>
 Or:
 <pre>
-    $ sudo echo "deb http://some.repository.org/debs/srss /" &gt; /etc/apt/sources.list.d/srss.list
+    $ sudo echo "deb http://some.repository.org/debs/srss /" \
+        &gt; /etc/apt/sources.list.d/srss.list
 </pre>
 
-You also need extra packages, so make sure you've added all for ubstable:
+You also need extra packages, so make sure you've added all for debian unstable:
 <pre>
     $ sudo echo "
     deb http://ftp.debian.org/debian/ unstable main non-free contrib
