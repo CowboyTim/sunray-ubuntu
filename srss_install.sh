@@ -305,7 +305,7 @@ Architecture: amd64
 Depends: \${shlibs:Depends}, ed, pulseaudio, pdksh, lib32stdc++6, libldap-2.4-2, ldap-utils, gawk, ia32-libs, xkb-data, tftpd, $KDEPS
 Conflicts: xkb-data-legacy, gdm, xdm
 Recommends: openbox
-Provides: gdm3, gdm
+Provides: gdm3
 Replaces: gdm3, gdm, gnome-control-center-data
 Suggests: xfce4, gnome, kde
 Description: SunRay server software
