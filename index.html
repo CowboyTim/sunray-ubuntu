@@ -20,7 +20,7 @@
       margin: 0 auto;
       width: 700px;
     }
-		h1 { font-size: 3.8em; color: #483477; margin-bottom: 3px; }
+		h1 { font-size: 2.8em; color: #483477; margin-bottom: 3px; }
 		h1 .small { font-size: 0.4em; }
 		h1 a { text-decoration: none }
 		h2 { font-size: 1.5em; color: #483477; }
@@ -82,7 +82,8 @@ You also need extra packages, so make sure you've added all for ubstable:
 <pre>
     $ sudo echo "
     deb http://ftp.debian.org/debian/ unstable main non-free contrib
-    deb-src http://ftp.debian.org/debian/ unstable main non-free contrib" &gt; /etc/apt/sources.list.d/unstable.list
+    deb-src http://ftp.debian.org/debian/ unstable main non-free contrib
+    " &gt; /etc/apt/sources.list.d/unstable.list
 </pre>
 
 And update/install:
