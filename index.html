@@ -35,8 +35,6 @@
 </head>
 
 <body>
-  <a href="http://github.com/CowboyTim/sunray-ubuntu"><img style="position: absolute; top: 0; right: 0; border: 0;" src="http://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub" /></a>
-  
   <div id="container">
 
     <h1><a href="http://github.com/CowboyTim/sunray-ubuntu">sunray-ubuntu</a> 
@@ -51,16 +49,50 @@ debian systems. The SunRay server software from Oracle is installable on linux
 and only supported on SUSE/RedHat. It repackages the SunRay software into a deb
 file that can be installed with dpkg or even apt-get when put in a repository.
 <br>
-</p><h2>Dependencies</h2>
+</p>
+
+<h2>Source</h2>
+The source is on github and can be found <a href="http://github.com/CowboyTim/sunray-ubuntu">here</a>
+
+<h2>Dependencies</h2>
 <p>SunRay Server Software 4.2 (srss 4.2) from Oracle (formerly SUN). You also
 need at least a debian squeeze install amd64. The newest unstable is also
 supported with the newer linux-image 3.2.0-2-amd64 version.</p>
-<h2>Install</h2>
-<p>on debian unstable:
+
+<h2>Build srss debiab dpkg package</h2>
+<p>on debian unstable, as a regular user:
 <pre>
-  $ sudo apt-get install fakeroot alien build-essential linux-headers-3.2.0-2-amd64
-  $ bash ./srss_install &lt;path to srss unzip&gt; [&lt;srss version&gt;]
+    $ sudo apt-get install fakeroot alien build-essential linux-headers-3.2.0-2-amd64
+    $ bash ./srss_install &lt;path to srss unzip&gt; [&lt;4.1|4.2&gt;]
 </pre></p>
+
+<h2>Install built srss dpkg</h2>
+The build script makes a correct Packages.gz and deb file in ~/srss. One can
+add this as an apt repository or copy this over to a webserver and add that as
+a repository:
+<pre>
+    $ sudo echo "deb file:///home/test /" &gt; /etc/apt/sources.list.d/srss.list 
+</pre>
+Or:
+<pre>
+    $ sudo echo "deb http://some.repository.org/debs/srss /" &gt; /etc/apt/sources.list.d/srss.list
+</pre>
+
+You also need extra packages, so make sure you've added all for ubstable:
+<pre>
+    $ sudo echo "
+    deb http://ftp.debian.org/debian/ unstable main non-free contrib
+    deb-src http://ftp.debian.org/debian/ unstable main non-free contrib" &gt; /etc/apt/sources.list.d/unstable.list
+</pre>
+
+And update/install:
+<pre>
+    $ sudo su -
+    # apt-get update
+    # apt-get install srss
+    # update-rc.d zsunray-init enable  3 5
+</pre>
+
 <h2>License</h2>
 <pre>SunRay-ubuntu is distributed under the zlib/libpng
 license, which is OSS (Open Source Software) compliant.
