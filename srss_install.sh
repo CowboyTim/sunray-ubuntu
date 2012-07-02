@@ -91,16 +91,13 @@
 #
 
 source_dir=$1
-version=$2
+version=4.2
 if [ -z $source_dir ]; then
-    echo "Usage: $0 <srss software source dir> [version]"
+    echo "Usage: $0 <srss software source dir>"
     exit 0
 fi
 
-if [ -z $version ]; then
-    version='4.2'
-fi
-rev=9
+rev=10
 
 here=$(dirname $(readlink -f $0))
 
@@ -121,12 +118,12 @@ for rpm in $source_dir/{Sun_Ray_*,Docs,Kiosk*}/Linux/Packages/*.rpm; do
              --preserve-modification-time)
 done
 
-for pkg in $debianbase/main/g/gdbm/libgdbm3_1.8.3-10_i386.deb \
+for pkg in $debianbase/main/g/gdbm/libgdbm3_1.8.3-11_i386.deb \
            $ubuntubase/multiverse/o/openmotif/libmotif3_2.2.3-2_i386.deb \
            $ubuntubase/universe/g/glib1.2/libglib1.2ldbl_1.2.10-19build1_i386.deb \
-           $debianbase/main/libx/libxfont/libxfont1_1.4.5-1_i386.deb \
+           $debianbase/main/libx/libxfont/libxfont1_1.4.5-2_i386.deb \
            $debianbase/main/g/gdm/gdm_2.20.11-4_amd64.deb \
-           $debianbase/main/libf/libfontenc/libfontenc1_1.1.0-1_i386.deb; do
+           $debianbase/main/libf/libfontenc/libfontenc1_1.1.1-1_i386.deb; do
     (cd $tmpdir && wget $pkg || exit 1) || exit $?
 done
 
