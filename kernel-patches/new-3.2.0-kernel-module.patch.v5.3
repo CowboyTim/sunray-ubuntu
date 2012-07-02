@@ -1,0 +1,192 @@
+diff -ru orig.src/SUNWut/utadem/utadem.c new.src/SUNWut/utadem/utadem.c
+--- orig.src/SUNWut/utadem/utadem.c	2012-03-22 11:18:25.000000000 -0400
++++ new.src/SUNWut/utadem/utadem.c	2012-03-22 11:35:45.000000000 -0400
+@@ -22,7 +22,8 @@
+ #include <linux/proc_fs.h>
+ #include <linux/sound.h>
+ #include <linux/soundcard.h>
+-#include <linux/smp_lock.h>
++#include <linux/spinlock.h>
++#include <linux/semaphore.h>
+ #include <linux/major.h>
+ #include <asm/atomic.h>
+ #include <asm/uaccess.h>
+@@ -30,6 +31,10 @@
+ 
+ #include "utadem.h"
+ 
++#define init_MUTEX(_m) sema_init(_m,1)
++#define init_MUTEX_LOCKED(_m) sema_init(_m,0)
++
++
+ /*
+  * utadem - Audio Device Emulation
+  *
+@@ -403,12 +408,12 @@
+ 
+ /* the global list of active sessions (struct uta_session) */
+ static LIST_HEAD(session_list);
+-static spinlock_t sesslist_lock = SPIN_LOCK_UNLOCKED;
++DEFINE_SPINLOCK(sesslist_lock);
+ 
+ /* the global session bitmask */
+ static int sessbits_count; /* count of ulongs in the array */
+ static unsigned long *session_bits;
+-static spinlock_t sessbits_lock = SPIN_LOCK_UNLOCKED;
++DEFINE_SPINLOCK(sessbits_lock);
+ 
+ /* module parameters */
+ static int max_sessions = 2048;	  /* Maximum number of sessions */
+@@ -2467,9 +2472,7 @@
+ 
+ 	DPRINTF(2, "entering %s()\n", __FUNCTION__);
+ 
+-	lock_kernel();				/* Big Kernel Lock */
+ 	ret = utadem_ioctl(file->f_dentry->d_inode, file, cmd, arg);
+-	unlock_kernel();
+ 
+ 	return (long)(ret);
+ }
+@@ -2604,7 +2607,7 @@
+ 	read:		utadsp_read,
+ 	write:		utadsp_write,
+ 	poll:		utadsp_poll,
+-	ioctl:		utadem_ioctl,
++	unlocked_ioctl:	utadem_ioctl,
+ 	compat_ioctl:	utadem_compat_ioctl,
+ 	open:		utadsp_open,
+ 	release:	utadsp_release,
+@@ -2690,7 +2693,7 @@
+ static struct file_operations utamix_fops = {
+ 	owner:		THIS_MODULE,
+ 	llseek:		no_llseek,
+-	ioctl:		utadem_ioctl,
++	unlocked_ioctl:	utadem_ioctl,
+ 	open:		utamix_open,
+ 	release:	utamix_release,
+ };
+diff -ru orig.src/SUNWut/utdisk/utdisk.c new.src/SUNWut/utdisk/utdisk.c
+--- orig.src/SUNWut/utdisk/utdisk.c	2012-03-22 11:18:25.000000000 -0400
++++ new.src/SUNWut/utdisk/utdisk.c	2012-03-22 11:40:06.000000000 -0400
+@@ -22,7 +22,8 @@
+ #include <linux/init.h>			/* __init macro */
+ #include <linux/fd.h>			/* FDEJECT */
+ #include <linux/cdrom.h>		/* CDROMEJECT */
+-#include <linux/smp_lock.h>		/* lock_kernel */
++#include <linux/spinlock.h>
++#include <linux/semaphore.h>
+ #include <scsi/scsi.h>			/* command values*/
+ #include <scsi/scsi_ioctl.h>		/* SCSI_IOCTL_SEND_COMMAND */
+ #include <scsi/scsi_cmnd.h>		/* MAX_COMMAND_SIZE */
+@@ -82,8 +83,12 @@
+ #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,28)
+ 	.ioctl =		utdisk_ioctl,
+ #else
++#if LINUX_VERSION_CODE > KERNEL_VERSION(3,0,0)
++ 	.ioctl =		utdisk_ioctl,
++#else
+ 	.locked_ioctl =		utdisk_ioctl,
+ #endif
++#endif
+ 	.compat_ioctl =		utdisk_compat_ioctl,
+ 	.release =		utdisk_release,
+ 	.media_changed =	utdisk_media_changed,
+@@ -446,14 +451,14 @@
+ 
+ 	utprintf("%s: cmd = %x\n", __FUNCTION__, cmd);
+ 
+-	lock_kernel();		/* Big Kernel Lock */
+ #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,28)
++	lock_kernel();		/* Big Kernel Lock */
+ 	ret = utdisk_ioctl(fp->f_dentry->d_inode, fp, (cmd | UTDISK_32BIT_PTRS),
+ 			arg);
++	unlock_kernel();
+ #else
+ 	ret = utdisk_ioctl(b, fm, (cmd | UTDISK_32BIT_PTRS), arg);
+ #endif
+-	unlock_kernel();
+ 
+ #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,28)
+ 	return (long) (ret);
+diff -ru orig.src/SUNWut/utdisk/utdiskctl.c new.src/SUNWut/utdisk/utdiskctl.c
+--- orig.src/SUNWut/utdisk/utdiskctl.c	2012-03-22 11:18:25.000000000 -0400
++++ new.src/SUNWut/utdisk/utdiskctl.c	2012-03-22 11:41:52.000000000 -0400
+@@ -22,7 +22,8 @@
+ #include <linux/init.h>			/* module entry-point macros */
+ #include <linux/fs.h>			/* device entry points */
+ #include <linux/proc_fs.h>		/* create_proc_read_entry/remove_proc_entry */
+-#include <linux/smp_lock.h>		/* lock_kernel */
++#include <linux/spinlock.h>
++#include <linux/semaphore.h>
+ #include <asm/uaccess.h>		/* userland access */
+ #include "utdisk.h"
+ #include "utdiskctl.h"
+@@ -91,7 +92,7 @@
+ 	.write		= utstk_file_write,
+ 	.open		= utstk_open,
+ 	.release	= utstk_release,
+-	.ioctl		= utstk_ioctl,
++	.unlocked_ioctl	= utstk_ioctl,
+ 	.compat_ioctl	= utstk_compat_ioctl,
+ 	.owner		= THIS_MODULE,
+ };
+@@ -541,10 +542,8 @@
+ 	int	ret;
+ 
+ 	utprintf("%s: cmd=%x\n", __FUNCTION__, command);
+-	lock_kernel();			/* Big Kernel Lock */
+ 	ret = utstk_ioctl(fp->f_dentry->d_inode, fp,
+ 					(command | UTDISK_32BIT_PTRS), arg);
+-	unlock_kernel();
+ 
+ 	return (long)(ret);
+ }
+diff -ru orig.src/SUNWut/utio/utio.c new.src/SUNWut/utio/utio.c
+--- orig.src/SUNWut/utio/utio.c	2012-03-22 11:18:25.000000000 -0400
++++ new.src/SUNWut/utio/utio.c	2012-03-22 11:44:40.000000000 -0400
+@@ -127,7 +127,8 @@
+ #include <linux/module.h>
+ #include <linux/moduleparam.h>
+ #include <linux/fs.h>
+-#include <linux/smp_lock.h>
++#include <linux/spinlock.h>
++#include <linux/semaphore.h>
+ #include <linux/sched.h>
+ #include <linux/types.h>
+ #include <linux/errno.h>
+@@ -146,6 +147,9 @@
+ 
+ #include "utio.h"
+ 
++#define init_MUTEX(_m) sema_init(_m,1)
++#define init_MUTEX_LOCKED(_m) sema_init(_m,0)
++
+ /* get major number at load time */
+ #define	UTIO_MAJOR	0
+ 
+@@ -3144,8 +3148,6 @@
+ 
+ 	DPRINTF(2, "entering %s()\n", __FUNCTION__);
+ 
+-	lock_kernel();
+-
+ 	switch (cmd) {
+ 
+ #if defined(CONFIG_COMPAT) || defined(CONFIG_SPARC64) || defined(CONFIG_X86_64) || defined(CONFIG_PPC64)
+@@ -3164,7 +3166,6 @@
+ 		ret = utio_ioctl(file->f_dentry->d_inode, file, cmd, arg);
+ 		break;
+ 	}
+-	unlock_kernel();
+ 
+ 	DPRINTF(2, "exiting %s()\n", __FUNCTION__);
+ 	return (ret);
+@@ -3526,7 +3527,7 @@
+ 	read:		utio_read,
+ 	write:		utio_write,
+ 	poll:		utio_poll,
+-	ioctl:		utio_ioctl,
++	unlocked_ioctl:	utio_ioctl,
+ 	compat_ioctl:	utio_compat_ioctl,
+ 	open:		utio_open,
+ 	release:	utio_release,
