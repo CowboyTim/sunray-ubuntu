@@ -62,27 +62,7 @@ diff -Naur srss.orig/opt/SUNWut/lib/utdmsession srss.494/opt/SUNWut/lib/utdmsess
  
  if [ $? -ne 0 ]; then
 
-diff -Naur srss.orig/opt/SUNWut/lib/utprodinfo srss.494/opt/SUNWut/lib/utprodinfo
---- srss.orig/opt/SUNWut/lib/utprodinfo	2009-11-17 15:39:40.000000000 +0100
-+++ srss.494/opt/SUNWut/lib/utprodinfo	2009-11-17 15:40:15.000000000 +0100
-@@ -341,7 +341,8 @@
- 		# found no params, just return
- 		return 0
- 	fi
--	rpm -q --queryformat ${MAPPEDLIST} $PKGNAME 2>/dev/null
-+    echo "/opt"
-+	#rpm -q --queryformat ${MAPPEDLIST} $PKGNAME 2>/dev/null
- 	return 0
- }
- 
-@@ -356,6 +357,7 @@
- 	if [[ $# -ne 2 ]]; then
- 		return 1
- 	fi
-+    return 0
- 	case $1 in
- 	"installed")	# package installed, could be either partial or complete
- 		rpm -q --quiet $2 > /dev/null 2>&1
+diff -Naur srss.orig/opt/SUNWut/sbin/utconfig srss.494/opt/SUNWut/sbin/utconfig
 --- srss.orig/opt/SUNWut/sbin/utconfig      2012-03-27 15:16:26.000000000 -0400
 +++ srss.494/opt/SUNWut/sbin/utconfig     2012-07-03 05:08:23.000000000 -0400
 @@ -282,39 +282,27 @@
@@ -131,4 +111,158 @@ diff -Naur srss.orig/opt/SUNWut/lib/utprodinfo srss.494/opt/SUNWut/lib/utprodinf
  }
  
  KioskInstalled() {
-
+diff -Naur srss.orig/opt/SUNWut/lib/xmgr/gdm/reset-dpy srss.494/opt/SUNWut/lib/xmgr/gdm/reset-dpy
+--- srss.orig/opt/SUNWut/lib/xmgr/gdm/reset-dpy  2012-07-03 05:43:55.000000000 -0400
++++ srss.494/opt/SUNWut/lib/xmgr/gdm/reset-dpy     2012-03-27 15:16:24.000000000 -0400
+@@ -1,4 +1,4 @@
+-#!/bin/sh
++#!/bin/bash
+ #
+ # ident "@(#)gdm-reset-dpy.sh  1.11    11/01/26 Oracle"
+ #
+diff -Naur srss.orig/opt/SUNWuttsc/lib/uttscadm srss.494/opt/SUNWuttsc/lib/uttscadm
+--- srss.orig/opt/SUNWuttsc/lib/uttscadm 2012-03-27 16:23:56.000000000 -0400
++++ srss.494/opt/SUNWuttsc/lib/uttscadm      2012-07-03 05:49:43.000000000 -0400
+@@ -432,7 +432,8 @@
+ 
+     case "$OS" in # {
+     Linux)
+-      chkconfig --add uttscp > /dev/null
++      update-rc.d uttscp defaults > /dev/null
++      update-rc.d uttscp enable 2 3 4 5 > /dev/null
+     ;;
+ 
+     esac # }
+@@ -459,7 +460,7 @@
+ 
+     case "$OS" in # {
+     Linux)
+-      chkconfig --del uttscp > /dev/null
++      update-rc.d -f uttscp remove > /dev/null
+     ;;
+ 
+     esac # }
+diff -Naur srss.orig/opt/SUNWut/sbin/utreplica srss.494/opt/SUNWut/sbin/utreplica
+--- srss.orig/opt/SUNWut/sbin/utreplica  2012-03-27 15:16:26.000000000 -0400
++++ srss.494/opt/SUNWut/sbin/utreplica  2012-07-03 06:02:32.000000000 -0400
+@@ -80,7 +80,7 @@
+                         ETCSERVICES=/etc/inet/services
+                        LOGFILE="/var/adm/log/$PROGRAM_ID.${TIMESTAMP}.log"
+                         ;;
+-                Linux)  LCL_PACKAGE="$(rpm -qf /usr/bin/ldapadd 2>/dev/null)"
++                Linux)  LCL_PACKAGE="ldap-utils"
+                         LDAPSEARCH="/usr/bin/ldapsearch -x -LLL "
+                        GREP=/bin/grep
+                         ETCSERVICES=/etc/services
+@@ -265,39 +265,27 @@
+ }
+ 
+ UTInstalled() {
+-  $UTLIBDIR/utprodinfo -t installed SUNWuta
+-  return $?
++  return 0
+ }
+ 
+ LdapClientInstalled() {
+-  $UTLIBDIR/utprodinfo -t installed $LCL_PACKAGE
+-  return $?
++  return 0
+ }
+ 
+ LdapClientInstallPartial() {
+-  $UTLIBDIR/utprodinfo -t partial $LCL_PACKAGE
+-  return $?  
++  return 1
+ }
+ 
+ SunDSInstalled() {
+-  $UTLIBDIR/utprodinfo -t installed $SRDS_PACKAGE
+-  return $?
++  return 0
+ }
+ 
+ SunDSInstallPartial() {
+-  $UTLIBDIR/utprodinfo -t partial $SRDS_PACKAGE
+-  return $?  
++  return 1
+ }
+ 
+ SunDSVersion() {
+-  INSTALLED_VERSION="$($UTLIBDIR/utprodinfo -p $SRDS_PACKAGE PRODVERS 2>/dev/null)"
+-  #
+-  # above var is global, used in calling func error msg
+-
+-  case "$INSTALLED_VERSION" in
+-    $1) return 0;;
+-    *)  return 1;;
+-  esac
++  return 0
+ }
+ 
+ # ReplyYesOrNo
+diff -Naur srss.orig/opt/SUNWuttsc/lib/utprodinfo srss.494/opt/SUNWuttsc/lib/utprodinfo
+--- srss.orig/opt/SUNWut/lib/utprodinfo	2012-05-30 02:29:50.000000000 -0400
++++ srss.494/opt/SUNWut/lib/utprodinfo	2012-07-03 07:10:05.000000000 -0400
+@@ -81,13 +81,13 @@
+ # --- BASEDIR - basedirectory where the product is installed. Ex: /opt
+ Param[${MAXParam}]="BASEDIR"
+ SunOS_Mapped_Param[${MAXParam}]="BASEDIR"
+-Linux_Mapped_Param[${MAXParam}]="%{INSTALLPREFIX}"
++Linux_Mapped_Param[${MAXParam}]="/opt"
+ let MAXParam+=1
+ # --- VERSION - version number with the build info.  Ex: 2.0_37.b
+ Param[${MAXParam}]="VERSION"
+ SunOS_Mapped_Param[${MAXParam}]="VERSION"
+ SunOS_Mapped_Sed[${MAXParam}]="s/\([0-9][0-9]*\.[0-9][0-9]*_[0-9][0-9]*.*\),.*/\1/"
+-Linux_Mapped_Param[${MAXParam}]="%{VERSION}_%{RELEASE}"
++Linux_Mapped_Param[${MAXParam}]="\${Version}_\${Revision}"
+ let MAXParam+=1
+ # --- PSTAMP - product timestamp
+ Param[${MAXParam}]="PSTAMP"
+@@ -97,17 +97,17 @@
+ # --- NAME - description of the package.
+ Param[${MAXParam}]="NAME"
+ SunOS_Mapped_Param[${MAXParam}]="NAME"
+-Linux_Mapped_Param[${MAXParam}]="%{SUMMARY}"
++Linux_Mapped_Param[${MAXParam}]="\${binary:Summary}"
+ let MAXParam+=1
+ # --- PRODVERS - product version without the build info.  Ex: 2.0
+ Param[${MAXParam}]="PRODVERS"
+ SunOS_Mapped_Param[${MAXParam}]="SUNW_PRODVERS"
+-Linux_Mapped_Param[${MAXParam}]="%{VERSION}"
++Linux_Mapped_Param[${MAXParam}]="\${source:Version}"
+ let MAXParam+=1
+ # --- PKGNAME - package name. Ex: SUNWuto
+ Param[${MAXParam}]="PKGNAME"
+ SunOS_Mapped_Param[${MAXParam}]="PKGINST"
+-Linux_Mapped_Param[${MAXParam}]="%{NAME}"
++Linux_Mapped_Param[${MAXParam}]="\${binary:Package}"
+ let MAXParam+=1
+ # --- INSTDATE - date the package is installed on the system.
+ Param[${MAXParam}]="INSTDATE"
+@@ -318,7 +318,7 @@
+ function Linux_dispAll {
+ 	$DEBUG
+ 	# NOTE: must sort first so that we can return the exit code from grep
+-	rpm -q -a --queryformat "%-14{NAME} %{SUMMARY}\n" | \
++	dpkg -l |
+ 	    (export LC_ALL=C; sort -u) | egrep "Sun Ray|Kiosk Session Service"
+ 	return $?
+ }
+@@ -341,7 +341,7 @@
+ 		# found no params, just return
+ 		return 0
+ 	fi
+-	rpm -q --queryformat ${MAPPEDLIST} $PKGNAME 2>/dev/null
++	dpkg-query -W -f="${MAPPEDLIST}" srss 2>/dev/null
+ 	return 0
+ }
+ 
+@@ -356,6 +356,7 @@
+ 	if [[ $# -ne 2 ]]; then
+ 		return 1
+ 	fi
++	return 0
+ 	case $1 in
+ 	"installed")	# package installed, could be either partial or complete
+ 		rpm -q --quiet $2 > /dev/null 2>&1
