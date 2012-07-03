@@ -1,0 +1,134 @@
+diff -Naur srss.orig/opt/SUNWut/lib/dhcp/isc/utdhcpservice srss.494/opt/SUNWut/lib/dhcp/isc/utdhcpservice
+--- srss.orig/opt/SUNWut/lib/dhcp/isc/utdhcpservice	2009-11-17 15:39:40.000000000 +0100
++++ srss.494/opt/SUNWut/lib/dhcp/isc/utdhcpservice	2009-11-17 15:40:15.000000000 +0100
+@@ -95,13 +95,12 @@
+ 
+ function StatusDHCP {
+     typeset PACKAGE="${DHCP_PACKAGE}"
+-    if $DHCP_INSTALLED ; then
+-      # get the actual package name including version and release
+-      PACKAGE="$(rpm -q ${DHCP_PACKAGE} 2> /dev/null)"
+-    fi
+-    if ! $DHCP_RUNNING && [ $DHCP_STATE != "unconfigured" ] ; then
+-      DHCP_STATE="disabled"
+-    fi
++    DHCP_INSTALLED=true
++    DHCP_ENABLED=true
++    DHCP_CONFIGURED=true
++    DHCP_RUNNING=true
++    DHCP_PACKAGE="dhcp3-server"
++    DHCP_STATE="online"
+     print "begin dhcpstate"
+     print "installed=${DHCP_INSTALLED}"
+     print "enabled=${DHCP_ENABLED}"
+diff -Naur srss.orig/opt/SUNWut/lib/utadmingid srss.494/opt/SUNWut/lib/utadmingid
+--- srss.orig/opt/SUNWut/lib/utadmingid	2009-11-17 15:39:40.000000000 +0100
++++ srss.494/opt/SUNWut/lib/utadmingid	2009-11-17 15:40:15.000000000 +0100
+@@ -15,7 +15,7 @@
+ ETCDIR="/etc/opt/SUNWut"
+ UTADMINPW=${ETCDIR}/utadmin.pw
+ if [ -f $UTADMINPW ] ; then
+-	WEBGUI_GROUP=`/bin/ls -gn $UTADMINPW | /bin/awk '{print $3}' `
++	WEBGUI_GROUP=`/bin/ls -gn $UTADMINPW | /usr/bin/awk '{print $3}' `
+ fi
+ WEBGUI_GROUP=${WEBGUI_GROUP:-root}
+ print $WEBGUI_GROUP
+diff -Naur srss.orig/opt/SUNWut/lib/utdmsession srss.494/opt/SUNWut/lib/utdmsession
+--- srss.orig/opt/SUNWut/lib/utdmsession	2009-11-17 15:39:40.000000000 +0100
++++ srss.494/opt/SUNWut/lib/utdmsession	2009-11-17 15:40:15.000000000 +0100
+@@ -23,10 +23,10 @@
+ #	    -z - optional tag for logging purposes
+ #
+ 
+-#exec >/var/tmp/utdmsession.$$ 2>&1       # Debug
+-#set -x
++exec >/var/tmp/utdmsession.$$ 2>&1       # Debug
++set -x
+ 
+-MOD="`/bin/basename $0`"
++MOD="`basename $0`"
+ USAGE="usage: $MOD [-c|-d] Xdisplay [-z tag]"
+ UTMNT_DIRLOCK=".session"
+ 
+--- srss.orig/opt/SUNWut/lib/utgdmconfigpath.orig    2012-07-03 05:00:54.000000000 -0400
++++ srss.494/opt/SUNWut/lib/utgdmconfigpath 2012-07-03 05:02:07.000000000 -0400
+@@ -14,7 +14,7 @@
+ if [ "`uname -s`" = "SunOS" ]; then
+     gdm_path=`$UTWHICH -f $gdm_search_path custom.conf`
+ else
+-    gdm_path=`rpm -ql "gdm" | grep "custom.conf"`
++    gdm_path=/etc/gdm
+ fi
+ 
+ if [ $? -ne 0 ]; then
+
+diff -Naur srss.orig/opt/SUNWut/lib/utprodinfo srss.494/opt/SUNWut/lib/utprodinfo
+--- srss.orig/opt/SUNWut/lib/utprodinfo	2009-11-17 15:39:40.000000000 +0100
++++ srss.494/opt/SUNWut/lib/utprodinfo	2009-11-17 15:40:15.000000000 +0100
+@@ -341,7 +341,8 @@
+ 		# found no params, just return
+ 		return 0
+ 	fi
+-	rpm -q --queryformat ${MAPPEDLIST} $PKGNAME 2>/dev/null
++    echo "/opt"
++	#rpm -q --queryformat ${MAPPEDLIST} $PKGNAME 2>/dev/null
+ 	return 0
+ }
+ 
+@@ -356,6 +357,7 @@
+ 	if [[ $# -ne 2 ]]; then
+ 		return 1
+ 	fi
++    return 0
+ 	case $1 in
+ 	"installed")	# package installed, could be either partial or complete
+ 		rpm -q --quiet $2 > /dev/null 2>&1
+--- srss.orig/opt/SUNWut/sbin/utconfig      2012-03-27 15:16:26.000000000 -0400
++++ srss.494/opt/SUNWut/sbin/utconfig     2012-07-03 05:08:23.000000000 -0400
+@@ -282,39 +282,27 @@
+ }
+ 
+ UTInstalled() {
+-  ${G_MEDIA_DIR}/utprodinfo -t installed SUNWuta
+-  return $?
++  return 0
+ }
+ 
+ LdapClientInstalled() {
+-  ${G_MEDIA_DIR}/utprodinfo -t installed $LCL_PACKAGE 2> /dev/null
+-  return $?
++  return 0
+ }
+ 
+ LdapClientInstallPartial() {
+-  ${G_MEDIA_DIR}/utprodinfo -t partial $LCL_PACKAGE
+-  return $?  
++  return 1
+ }
+ 
+ SRDSInstalled() {
+-  ${G_MEDIA_DIR}/utprodinfo -t installed $SRDS_PACKAGE
+-  return $?
++  return 0
+ }
+ 
+ SRDSInstallPartial() {
+-  ${G_MEDIA_DIR}/utprodinfo -t partial $SRDS_PACKAGE
+-  return $?  
++  return 1
+ }
+ 
+ SRDSVersion() {
+-  INSTALLED_VERSION="$(${G_MEDIA_DIR}/utprodinfo -p $SRDS_PACKAGE PRODVERS)"
+-  #
+-  # above var is global, used in calling func error msg
+-
+-  case "$INSTALLED_VERSION" in
+-    $1) return 0;;
+-    *)  return 1;;
+-  esac
++  return 0
+ }
+ 
+ KioskInstalled() {
+
