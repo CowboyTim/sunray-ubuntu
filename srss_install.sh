@@ -91,13 +91,14 @@
 #
 
 source_dir=$1
-version=4.2
+updates_dir=$2
+version=4.4
 if [ -z $source_dir ]; then
-    echo "Usage: $0 <srss software source dir>"
+    echo "Usage: $0 <srss software source dir> <updates dir>"
     exit 0
 fi
 
-rev=10
+rev=11
 
 here=$(dirname $(readlink -f $0))
 
@@ -106,10 +107,12 @@ tmpdir=/var/tmp/srss.$$/srss
 mkdir -p $tmpdir
 echo "Using $tmpdir"
 
-debianbase=http://ftp.us.debian.org/debian/pool
-ubuntubase=http://fr.archive.ubuntu.com/ubuntu/pool/
-
-for rpm in $source_dir/{Sun_Ray_*,Docs,Kiosk*}/Linux/Packages/*.rpm; do
+echo "Adding regular rpms..."
+for rpm in \
+            $source_dir/{Sun_Ray_*,Docs,Kiosk*,Sun_Ray_Connector*,VMware_View_Connector*}/Linux/Packages/*.rpm \
+            $updates_dir/Components/*/Content/{Sun_Ray_*,Docs,Kiosk*,Sun_Ray_Connector*,VMware_View_Connector*}/Linux/Packages/*.rpm \
+            $updates_dir/Components/*/Patches/linux/*.rpm \
+            $updates_dir/Version/Linux/Packages/*.rpm; do
     echo "Unpacking rpm $rpm"
     rpm2cpio $rpm|(cd $tmpdir; \
         cpio --extract \
@@ -117,6 +120,71 @@ for rpm in $source_dir/{Sun_Ray_*,Docs,Kiosk*}/Linux/Packages/*.rpm; do
              --no-absolute-filenames \
              --preserve-modification-time)
 done
+
+echo "Adding java..."
+mkdir -p $tmpdir/etc/opt/SUNWut
+java_install_dir=$source_dir/Supplemental/Java_Runtime_Environment/Linux
+java_install_file=$(basename `ls $java_install_dir/*.bin`)
+cp $java_install_dir/$java_install_file $tmpdir/usr
+cd $tmpdir/usr
+(
+    function more (){
+        true    
+    }         
+    export -f more
+    bash -x ./$java_install_file < <(printf "yes\n")
+)
+java_install_target_dir=$(basename `find $tmpdir/usr -name 'jre*' -type d`)
+mv $tmpdir/usr/$java_install_target_dir $tmpdir/usr/j2se
+rm $tmpdir/usr/$java_install_file
+
+echo "Building all kernel modules for all kernels we can find on the machine"
+(
+cd $tmpdir/usr
+tar cvzf src.tgz src
+KDEPS=""
+for V in `ls /usr/src|grep 'linux-headers'|grep -v common`; do
+    V=$(basename $V|sed s/linux-headers-//g)
+    if [ -z "$KDEPS" ]; then
+        KDEPS="linux-image-$V"
+    else
+        KDEPS="$KDEPS | linux-image-$V"
+    fi
+    rm -rf $tmpdir/usr/src
+    tar xvzfm src.tgz
+
+    echo "Patching kernel modules for kernel version $V..."
+    (
+        cd $tmpdir/usr/src/SUNWut
+        if [[ $V =~ ^2 ]]; then
+            echo "no-op"
+        else
+            patch -p2 < $here/kernel-patches/new-3.2.0-kernel-module.patch.v5.3
+        fi
+    )
+
+    for module_dir in src/SUNWut/*; do
+        echo "Build module $module_dir..."
+        (
+            cd $module_dir
+            echo $module_dir, $V
+            make clean 
+            VERSION=$V make
+            if [ $? -eq 0 ]; then
+                    mkdir -p $tmpdir/lib/modules/$V/misc
+                    cp -R *.ko $tmpdir/lib/modules/$V/misc
+                    make clean
+            fi
+        )
+    done
+done
+rm src.tgz
+echo $KDEPS > $tmproot/kdeps
+)
+
+
+debianbase=http://ftp.us.debian.org/debian/pool
+ubuntubase=http://fr.archive.ubuntu.com/ubuntu/pool/
 
 for pkg in $debianbase/main/g/gdbm/libgdbm3_1.8.3-11_i386.deb \
            $ubuntubase/multiverse/o/openmotif/libmotif3_2.2.3-2_i386.deb \
@@ -152,121 +220,41 @@ for extra_pkg in $tmpdir/{libgdbm3*,libmotif3*,libglib1.2ldbl*,libxfont1*,libfon
     rm -f $extra_pkg
 done
 
-echo "Adding java..."
-mkdir -p $tmpdir/etc/opt/SUNWut
-java_install_dir=$source_dir/Supplemental/Java_Runtime_Environment/Linux
-java_install_file=$(basename `ls $java_install_dir/*.bin`)
-cp $java_install_dir/$java_install_file $tmpdir/usr
-cd $tmpdir/usr
-(
-    function more (){
-        true    
-    }         
-    export -f more
-    bash -x ./$java_install_file < <(printf "yes\n")
-)
-java_install_target_dir=$(basename `find $tmpdir/usr -name 'jre*' -type d`)
-mv $tmpdir/usr/$java_install_target_dir $tmpdir/usr/j2se
-rm $tmpdir/usr/$java_install_file
-
 echo "Patching... SunRay /opt/SUNWut software"
-cd $tmpdir/opt/SUNWut
-if [ $version = '4.1' ]; then
-    patch -p3 < $here/ssrss-patches/rss4.1.debian-3.patch
-fi
+cp -a $tmpdir/ /tmp/orig.SUNWut
 if [ $version = '4.2' ]; then
+    cd $tmpdir/opt/SUNWut
     patch -p3 < $here/srss-patches/srss4.2.debian-3.patch
     echo "Xstartup helper must not be +x, as it's a ksh script, being"
     echo "sourced by a sh program else, see /etc/opt/SUNWut/gdm/SunRayPreSession/Default"
     chmod -x $tmpdir/opt/SUNWut/lib/prototype/Xstartup.SUNWut.prototype
 fi
-
-echo "Building all kernel modules for all kernels we can find on the machine"
-(
-cd $tmpdir/usr
-tar cvzf src.tgz src
-KDEPS=""
-for V in `ls /usr/src|grep 'linux-headers'|grep -v common`; do
-    V=$(basename $V|sed s/linux-headers-//g)
-    if [ -z "$KDEPS" ]; then
-        KDEPS="linux-image-$V"
-    else
-        KDEPS="$KDEPS | linux-image-$V"
-    fi
-    rm -rf $tmpdir/usr/src
-    tar xvzf src.tgz
-
-    echo "Patching kernel modules for kernel version $V..."
-    (
-        cd $tmpdir/usr/src/SUNWut
-        if [[ $V =~ ^2 ]]; then
-            patch -p0 < $here/kernel-patches/new-2.6.31-kernel-module.patch
-        else
-            patch -p0 < $here/kernel-patches/new-3.2.0-kernel-module.patch
-        fi
-    )
-
-    for module_dir in src/SUNWut/*; do
-        echo "Build module $module_dir..."
-        (
-            cd $module_dir
-            echo $module_dir, $V
-            make clean 
-            VERSION=$V make
-            if [ $? -eq 0 ]; then
-                    mkdir -p $tmpdir/lib/modules/$V/misc
-                    cp -R *.ko $tmpdir/lib/modules/$V/misc
-                    make clean
-            fi
-        )
-    done
-done
-rm src.tgz
-echo $KDEPS > $tmproot/kdeps
-)
+if [ $version = '4.4' ]; then
+    cd $tmpdir/
+    patch -p1 < $here/srss-patches/srss4.4.debian-3.patch
+    echo "Xstartup helper must not be +x, as it's a ksh script, being"
+    echo "sourced by a sh program else, see /etc/opt/SUNWut/gdm/SunRayPreSession/Default"
+    chmod -x $tmpdir/opt/SUNWut/lib/prototype/Xstartup.SUNWut.prototype
+fi
 
 echo "Making empty dirs..."
 mkdir -p $tmpdir/var/dt
 mkdir -p $tmpdir/var/opt/SUNWut/tokens
 mkdir -p $tmpdir/var/opt/SUNWut/displays
 
-echo "Fixing xkb stuff..."
-(
-    this_os_version=$(lsb_release -r -s)
-    if [ $this_os_version = '8.04' \
-         -o $this_os_version = '8.04.1' \
-         -o $this_os_version = '8.10' ]; then
-        cd $tmpdir
-        wget $baseurl/universe/x/xkb-data-legacy/xkb-data-legacy_1.0.1-4_all.deb
-        for extra_pkg in $tmpdir/xkb-data-legacy_1.0.1-4_all.deb; do
-            pkg_tmpdir=$tmproot/pkg_tmp_dir
-            mkdir -p $pkg_tmpdir
-            cd $pkg_tmpdir
-            fakeroot alien $extra_pkg --to-tgz
-            tar xvzf $pkg_tmpdir/*.tgz 
-            rm -f $pkg_tmpdir/*.tgz
-            mkdir -p $tmpdir/opt/SUNWut/lib
-            cp -R $pkg_tmpdir/usr/share/X11/xkb/* $tmpdir/opt/SUNWut/lib/xkb
-            rm -rf $pkg_tmpdir
-            ln -s /usr/bin/xkbcomp $tmpdir/opt/SUNWut/lib/xkb/xkbcomp
-            mkdir $tmpdir/etc/X11
-            ln -s /usr/share/X11/XKeysymDB $tmpdir/etc/X11/XKeysymDB
-        done
-    else
-        mv $tmpdir/opt/SUNWut/lib/xkb $tmpdir/opt/SUNWut/lib/xkb.bak
-        ln -s /usr/share/X11/xkb $tmpdir/opt/SUNWut/lib/xkb
-        mkdir -p $tmpdir/usr/share/X11/xkb
-        cp -a $tmpdir/opt/SUNWut/lib/xkb.bak/xkbtable.map $tmpdir/usr/share/X11/xkb
-        ln -s /var/lib/xkb $tmpdir/usr/share/X11/xkb/compiled
-        ln -s /usr/bin/xkbcomp $tmpdir/usr/share/X11/xkb/xkbcomp
-    fi
-)
+mv $tmpdir/opt/SUNWut/lib/xkb $tmpdir/opt/SUNWut/lib/xkb.bak
+ln -s /usr/share/X11/xkb $tmpdir/opt/SUNWut/lib/xkb
+mkdir -p $tmpdir/usr/share/X11/xkb
+cp -a $tmpdir/opt/SUNWut/lib/xkb.bak/xkbtable.map $tmpdir/usr/share/X11/xkb
+ln -s /var/lib/xkb $tmpdir/usr/share/X11/xkb/compiled
+ln -s /usr/bin/xkbcomp $tmpdir/usr/share/X11/xkb/xkbcomp
 
 echo "Making symlinks..."
 mkdir -p $tmpdir/usr/X11R6/lib
 ln -s /etc/X11 $tmpdir/usr/X11R6/lib/X11
-ln -s /usr/lib32/libldap-2.4.so.2 $tmpdir/opt/SUNWut/lib/libldap.so.199
-ln -s /usr/lib32/liblber-2.4.so.2 $tmpdir/opt/SUNWut/lib/liblber.so.199
+ln -s /usr/lib32/libldap-2.4.so.2 $tmpdir/opt/SUNWut/lib/libldap-2.3.so.0
+ln -s /usr/lib32/liblber-2.4.so.2 $tmpdir/opt/SUNWut/lib/liblber-2.3.so.0
+ln -s /opt/SUNWut/lib/i386-linux-gnu/libgdbm.so.3 $tmpdir/opt/SUNWut/lib/libgdbm.so.2
 
 echo "Making symlink for tftp. SunRay software expects /tftpboot"
 mkdir -p $tmpdir/srv/tftp
@@ -278,15 +266,22 @@ ln -s /usr/share/fonts/X11/misc $tmpdir/usr/share/X11/fonts/misc
 mkdir -p $tmpdir/usr/lib/X11/fonts
 ln -s /usr/share/fonts/X11/misc $tmpdir/usr/lib/X11/fonts/misc
 
+echo "Making a ld.so.conf.d entry..."
+mkdir -p $tmpdir/etc/ld.so.conf.d/
+cat > $tmpdir/etc/ld.so.conf.d/srss.conf <<EOld
+/opt/SUNWut/lib/
+/opt/SUNWut/lib/i386-linux-gnu
+EOld
+
 echo "Copying our own files"
 cp -R $here/{etc,opt,usr} $tmpdir
 
 echo "Making tar..."
 cd $tmpdir
-fakeroot tar czf $tmpdir/srss-${version}-${rev}.tgz *
+fakeroot tar czf $tmpdir/srss-${version}.tgz *
 
 echo "Making .deb..."
-fakeroot alien --version=${version} --bump=$rev -g -c -d $tmpdir/srss-${version}-${rev}.tgz
+fakeroot alien --version=${version} --bump=$rev -g -c -d $tmpdir/srss-${version}.tgz
 
 KDEPS=`cat $tmproot/kdeps`
 
@@ -305,13 +300,13 @@ Recommends: openbox
 Provides: gdm3
 Replaces: gdm3, gdm, gnome-control-center-data
 Suggests: xfce4, gnome, kde
-Description: SunRay server software
- This is Oracle's SunRay server software nicely packaged into one clean debian
+Description: Sun Ray server software
+ This is Oracle's Sun Ray server software nicely packaged into one clean debian
  package.
 EOctrl
 cat > $tmpdir/srss-${version}/debian/prerm <<EOrm
 #!/bin/sh
-rm -rf /var/dt /var/opt/SUNWut /var/log/SUNWut /etc/opt/SUNWut /var/lib/gdm /etc/gdm/custom.conf /srv/tftp/Corona* /srv/tftp/SunRay*
+rm -rf /var/dt /var/opt/SUNWut /var/log/SUNWut /etc/opt/SUNWut /etc/opt /opt/SUNWut/lib /opt/SUNWuttsc/lib /var/lib/gdm /etc/gdm/custom.conf /srv/tftp/Corona* /srv/tftp/SunRay*
 EOrm
 (cd $tmpdir/srss-${version}/ && fakeroot debian/rules binary)
 
