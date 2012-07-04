@@ -1,14 +1,13 @@
-#!/bin/sh
-
+#! /bin/sh
 ### BEGIN INIT INFO
-# Provides: zsunray-init
-# Required-Start: $local_fs $network $syslog $all
-# Required-Stop:
-# Should-Start:
-# Should-Stop:
-# Default-Start: 2 3 4 5
-# Default-Stop: 0 1 6
-# Short-Description: SunRay services
+# Provides:          zsunray-init
+# Should-Stop:       $gdm
+# Should-Start:      $gdm
+# Required-Start:    $local_fs $openbsd-inetd $gdm
+# Required-Stop:     $local_fs
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Sun Ray services
 ### END INIT INFO
 
 . /lib/lsb/init-functions
@@ -17,53 +16,21 @@ set -e
 
 unset _JAVA_OPTIONS
 
-DESC="SunRay services"
+. /etc/profile.d/sunray.sh
+
+DESC="Sun Ray services"
 case "$1" in
   start)
+    #mount -o remount,dev /tmp
+
     log_daemon_msg "Starting $DESC"
-
-    gconftool-2 --direct --config-source xml:readwrite:/etc/gconf/gconf.xml.mandatory --type bool --set /desktop/gnome/lockdown/disable_user_switching true
-    gconftool-2 --direct --config-source xml:readwrite:/etc/gconf/gconf.xml.mandatory --type bool --set /apps/gnome-power-manager/general/can_hibernate false
-    gconftool-2 --direct --config-source xml:readwrite:/etc/gconf/gconf.xml.mandatory --type bool --set /apps/gnome-power-manager/general/can_suspend false
-    gconftool-2 --direct --config-source xml:readwrite:/etc/gconf/gconf.xml.mandatory --type bool --set /apps/gnome-power-manager/general/can_shutdown false
-    gconftool-2 --direct --config-source xml:readwrite:/etc/gconf/gconf.xml.mandatory --type bool --set /apps/gnome-power-manager/general/can_restart false
-    gconftool-2 --direct --config-source xml:readwrite:/etc/gconf/gconf.xml.mandatory --type bool --set /apps/gnome_settings_daemon/plugins/keyboard false
-    gconftool-2 --direct --config-source xml:readwrite:/etc/gconf/gconf.xml.mandatory --type bool --set /apps/nautilus/preferences/media_automount false
-    gconftool-2 --direct --config-source xml:readwrite:/etc/gconf/gconf.xml.mandatory --type string --set /apps/gnome-screensaver/mode blank-only
-
-    mkdir -p /tmp/SUNWut/config/xconfig/
-    touch /tmp/SUNWut/config/xconfig/config.lock
-    touch /tmp/SUNWut/config/xconfig/Xservers
-    touch /tmp/SUNWut/config/xconfig/Xconfig
-
-    mount -o remount,dev /tmp
-    
-    cp /etc/gdm/gdm.conf-sunray /usr/share/gdm/defaults.conf
-    cp /etc/gdm/gdm.conf-sunray /etc/gdm/custom.conf
-    cp /etc/gdm/gdm.conf-sunray /etc/gdm/gdm.conf
-    /etc/init.d/gdm restart
-
-    /etc/init.d/openbsd-inetd start
-    /etc/init.d/utacleanup start
-    /etc/init.d/utds start
-    /etc/init.d/utsyscfg start
-    [ -x /etc/init.d/utstorage ] && /etc/init.d/utstorage start
-    /etc/init.d/utsvc start
-
+    utstart
     log_progress_msg "$DESC"
     log_end_msg 0
     ;;
   stop)
     log_daemon_msg "Stopping $DESC"
-    /etc/init.d/utsvc stop
-    [ -x /etc/init.d/utstorage ] && /etc/init.d/utstorage stop
-    /etc/init.d/utacleanup stop
-    /etc/init.d/utds stop
-    /etc/init.d/utsyscfg stop
-    for p in `pgrep Xnewt`; do kill -9 $p; done
-    for p in `pgrep utaction`; do kill -9 $p; done
-    /etc/init.d/gdm stop
-
+    utstop
     log_progress_msg "$DESC"
     log_end_msg 0
     ;;
@@ -72,8 +39,7 @@ case "$1" in
     $0 start
     ;;
   *)
-    N=/etc/init.d/zsunray-init
-    echo "Usage: $N {start|stop|restart|force-reload}" >&2
+    echo "Usage: $0 {start|stop|restart|force-reload}" >&2
     exit 1
     ;;
 esac
