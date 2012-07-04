@@ -266,3 +266,27 @@ diff -Naur srss.orig/opt/SUNWuttsc/lib/utprodinfo srss.494/opt/SUNWuttsc/lib/utp
  	case $1 in
  	"installed")	# package installed, could be either partial or complete
  		rpm -q --quiet $2 > /dev/null 2>&1
+diff -Naur orig.srss/opt/SUNWut/lib/xmgr/gdm/notify srss.494/opt/SUNWut/lib/xmgr/gdm/notify
+--- orig.srss/opt/SUNWut/lib/xmgr/gdm/notify    2012-03-27 21:16:24.000000000 +0200
++++ srss.494/opt/SUNWut/lib/xmgr/gdm/notify        2012-07-03 16:42:02.000000000 +0200
+@@ -52,20 +52,6 @@
+ # be certain that gdm is running
+ #
+ 
+-count=1000
+-
+-while [[ $count -gt 0 ]]
+-do
+-	count=$(($count-1))
+-	pgrep -P 1 -u 0 $DMNAME >/dev/null
+-	if [[ $? -ne 0 ]]
+-	then
+-		sleep 15
+-	else
+-		count=0
+-	fi
+-done
+-
+ #Cleanup if old links are lying around
+ if [ -L  "$PRESESSION_DIR/:$dpy" ]; then
+        rm  "$PRESESSION_DIR/:$dpy"
