@@ -109,7 +109,7 @@ echo "Using $tmpdir"
 
 echo "Adding regular rpms..."
 for rpm in \
-            $source_dir/{Sun_Ray_*,Docs,Kiosk*,Sun_Ray_Connector*,VMware_View_Connector*}/Linux/Packages/*.rpm \
+            $source_dir/{Sun_Ray_*,Docs,Kiosk*}/Linux/Packages/*.rpm \
             $updates_dir/Components/*/Content/{Sun_Ray_*,Docs,Kiosk*,Sun_Ray_Connector*,VMware_View_Connector*}/Linux/Packages/*.rpm \
             $updates_dir/Components/*/Patches/linux/*.rpm \
             $updates_dir/Version/Linux/Packages/*.rpm; do
@@ -117,6 +117,7 @@ for rpm in \
     rpm2cpio $rpm|(cd $tmpdir; \
         cpio --extract \
              --make-directories \
+             --unconditional \
              --no-absolute-filenames \
              --preserve-modification-time)
 done
@@ -275,6 +276,13 @@ EOld
 
 echo "Copying our own files"
 cp -R $here/{etc,opt,usr} $tmpdir
+
+echo "Copying gdm.conf-sunray over gdm.conf itself..."
+cp -a $here/etc/gdm/gdm.conf-sunray $tmpdir/etc/gdm/gdm.conf
+cp -a $here/etc/gdm/gdm.conf-sunray $tmpdir/usr/share/gdm/defaults.conf
+
+echo "adding symlink SecurityPolicy"
+ln -s /opt/SUNWut/lib/X11/SecurityPolicy $tmpdir/etc/opt/SUNWut/X11/SecurityPolicy
 
 echo "Making tar..."
 cd $tmpdir
