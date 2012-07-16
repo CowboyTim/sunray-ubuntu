@@ -24,7 +24,7 @@ case "$1" in
     mount -o remount,dev /tmp
 
     log_daemon_msg "Starting $DESC"
-    /etc/init.d/utsyscfg restart
+    /etc/init.d/utsyscfg start
     utstart
     log_progress_msg "$DESC"
     log_end_msg 0
