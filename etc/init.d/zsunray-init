@@ -21,9 +21,10 @@ unset _JAVA_OPTIONS
 DESC="Sun Ray services"
 case "$1" in
   start)
-    #mount -o remount,dev /tmp
+    mount -o remount,dev /tmp
 
     log_daemon_msg "Starting $DESC"
+    /etc/init.d/utsyscfg restart
     utstart
     log_progress_msg "$DESC"
     log_end_msg 0
@@ -31,6 +32,7 @@ case "$1" in
   stop)
     log_daemon_msg "Stopping $DESC"
     utstop
+    /etc/init.d/utsyscfg stop
     log_progress_msg "$DESC"
     log_end_msg 0
     ;;
