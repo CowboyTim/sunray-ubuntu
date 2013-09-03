@@ -1,0 +1,302 @@
+diff -ru orig.SUNWut/opt/SUNWut/lib/dhcp/isc/utdhcpservice orig.SUNWut.new/opt/SUNWut/lib/dhcp/isc/utdhcpservice
+--- orig.SUNWut/opt/SUNWut/lib/dhcp/isc/utdhcpservice	2013-02-20 07:28:39.000000000 +0100
++++ orig.SUNWut.new/opt/SUNWut/lib/dhcp/isc/utdhcpservice	2013-09-03 15:22:46.148735764 +0200
+@@ -96,13 +96,12 @@
+ 
+ function StatusDHCP {
+     typeset PACKAGE="${DHCP_PACKAGE}"
+-    if $DHCP_INSTALLED ; then
+-      # get the actual package name including version and release
+-      PACKAGE="$(rpm -q ${DHCP_PACKAGE} 2> /dev/null)"
+-    fi
+-    if ! $DHCP_RUNNING && [ $DHCP_STATE != "unconfigured" ] ; then
+-      DHCP_STATE="disabled"
+-    fi
++    DHCP_INSTALLED=true
++    DHCP_ENABLED=true
++    DHCP_CONFIGURED=true
++    DHCP_RUNNING=true
++    DHCP_PACKAGE="dhcp3-server"
++    DHCP_STATE="online"
+     print "begin dhcpstate"
+     print "installed=${DHCP_INSTALLED}"
+     print "enabled=${DHCP_ENABLED}"
+diff -ru orig.SUNWut/opt/SUNWut/lib/utadmingid orig.SUNWut.new/opt/SUNWut/lib/utadmingid
+--- orig.SUNWut/opt/SUNWut/lib/utadmingid	2013-02-20 07:28:38.000000000 +0100
++++ orig.SUNWut.new/opt/SUNWut/lib/utadmingid	2013-09-03 15:34:14.822839650 +0200
+@@ -15,7 +15,7 @@
+ ETCDIR="/etc/opt/SUNWut"
+ UTADMINPW=${ETCDIR}/utadmin.pw
+ if [ -f $UTADMINPW ] ; then
+-	WEBGUI_GROUP=`/bin/ls -gn $UTADMINPW | /bin/awk '{print $3}' `
++	WEBGUI_GROUP=`/bin/ls -gn $UTADMINPW | /usr/bin/awk '{print $3}' `
+ fi
+ WEBGUI_GROUP=${WEBGUI_GROUP:-root}
+ print $WEBGUI_GROUP
+diff -ru orig.SUNWut/opt/SUNWut/lib/utdmsession orig.SUNWut.new/opt/SUNWut/lib/utdmsession
+--- orig.SUNWut/opt/SUNWut/lib/utdmsession	2013-02-20 07:28:33.000000000 +0100
++++ orig.SUNWut.new/opt/SUNWut/lib/utdmsession	2013-09-03 15:34:14.822839650 +0200
+@@ -23,10 +23,10 @@
+ #	    -z - optional tag for logging purposes
+ #
+ 
+-#exec >/var/tmp/utdmsession.$$ 2>&1       # Debug
+-#set -x
++exec >/var/tmp/utdmsession.$$ 2>&1       # Debug
++set -x
+ 
+-MOD="`/bin/basename $0`"
++MOD="`basename $0`"
+ USAGE="usage: $MOD [-c|-d] Xdisplay [-z tag]"
+ UTMNT_DIRLOCK=".session"
+ 
+diff -ru orig.SUNWut/opt/SUNWut/lib/utgdmconfigpath orig.SUNWut.new/opt/SUNWut/lib/utgdmconfigpath
+--- orig.SUNWut/opt/SUNWut/lib/utgdmconfigpath	2013-02-20 07:28:36.000000000 +0100
++++ orig.SUNWut.new/opt/SUNWut/lib/utgdmconfigpath	2013-09-03 15:21:38.045714094 +0200
+@@ -13,7 +13,7 @@
+ 
+ if ! gdm_path=$($UTWHICH -f $gdm_search_path custom.conf) \
+ 	&& [[ "$(uname -s)" == "Linux" ]]; then
+-    gdm_path=$(rpm -ql "gdm" | grep "custom.conf")
++    gdm_path="/etc/gdm"
+ fi
+ 
+ if [[ -z "$gdm_path" ]] ; then
+diff -ru orig.SUNWut/opt/SUNWut/lib/utprodinfo orig.SUNWut.new/opt/SUNWut/lib/utprodinfo
+--- orig.SUNWut/opt/SUNWut/lib/utprodinfo	2013-02-20 23:02:25.000000000 +0100
++++ orig.SUNWut.new/opt/SUNWut/lib/utprodinfo	2013-09-03 15:34:21.062749960 +0200
+@@ -80,13 +80,13 @@
+ # --- BASEDIR - basedirectory where the product is installed. Ex: /opt
+ Param[${MAXParam}]="BASEDIR"
+ SunOS_Mapped_Param[${MAXParam}]="!!!"
+-Linux_Mapped_Param[${MAXParam}]="!!!"
++Linux_Mapped_Param[${MAXParam}]="/opt"
+ let MAXParam+=1
+ # --- VERSION - version number with the build info.  Ex: 2.0_37.b
+ Param[${MAXParam}]="VERSION"
+ SunOS_Mapped_Param[${MAXParam}]="VERSION"
+ SunOS_Mapped_Sed[${MAXParam}]="s/\([0-9][0-9]*\.[0-9][0-9]*_.*\),.*/\1/"
+-Linux_Mapped_Param[${MAXParam}]="%{VERSION}_%{RELEASE}"
++Linux_Mapped_Param[${MAXParam}]="\${Version}_\${Revision}"
+ let MAXParam+=1
+ # --- PSTAMP - product timestamp
+ Param[${MAXParam}]="PSTAMP"
+@@ -96,18 +96,18 @@
+ # --- NAME - description of the package.
+ Param[${MAXParam}]="NAME"
+ SunOS_Mapped_Param[${MAXParam}]="NAME"
+-Linux_Mapped_Param[${MAXParam}]="%{SUMMARY}"
++Linux_Mapped_Param[${MAXParam}]="\${binary:Summary}"
+ let MAXParam+=1
+ # --- PRODVERS - product version without the build info.  Ex: 2.0
+ Param[${MAXParam}]="PRODVERS"
+ SunOS_Mapped_Param[${MAXParam}]="VERSION"
+ SunOS_Mapped_Sed[${MAXParam}]="s/[^0-9]*\([0-9][0-9.]*\)[_,]*.*/\1/"
+-Linux_Mapped_Param[${MAXParam}]="%{VERSION}"
++Linux_Mapped_Param[${MAXParam}]="\${source:Version}"
+ let MAXParam+=1
+ # --- PKGNAME - package name. Ex: SUNWuto
+ Param[${MAXParam}]="PKGNAME"
+ SunOS_Mapped_Param[${MAXParam}]="!!!"
+-Linux_Mapped_Param[${MAXParam}]="!!!"
++Linux_Mapped_Param[${MAXParam}]="\${binary:Package}"
+ let MAXParam+=1
+ # --- INSTDATE - date the package is installed on the system.
+ Param[${MAXParam}]="INSTDATE"
+@@ -317,6 +317,7 @@
+ 	if (( $# != 2 )); then
+ 		return 1
+ 	fi
++	return 0
+ 	case $1 in
+ 	"installed")	# package installed, could be either partial or complete
+ 		pkginfo -q $2
+@@ -350,7 +351,7 @@
+ function Linux_dispAll {
+ 	$DEBUG
+ 	# NOTE: must sort first so that we can return the exit code from grep
+-	rpm -q -a --queryformat "%-14{NAME} %{SUMMARY}\n" | \
++	dpkg -l | \
+ 	    (export LC_ALL=C; sort -u) | egrep "Sun Ray|Kiosk Session Service"
+ 	return $?
+ }
+@@ -372,7 +373,7 @@
+ 		# found no params, just return
+ 		return 0
+ 	fi
+-	rpm -q --queryformat ${MAPPEDLIST} $PKGNAME 2>/dev/null
++	dpkg-query -W -f="${MAPPEDLIST}" srss 2>/dev/null
+ 	return 0
+ }
+ 
+@@ -385,7 +386,7 @@
+ function Linux_testPkg {
+ 	$DEBUG
+ 	if (( $# != 2 )); then
+-		return 1
++		return 0
+ 	fi
+ 	case $1 in
+ 	"installed")	# package installed, could be either partial or complete
+diff -ru orig.SUNWut/opt/SUNWut/lib/xmgr/gdm/notify orig.SUNWut.new/opt/SUNWut/lib/xmgr/gdm/notify
+--- orig.SUNWut/opt/SUNWut/lib/xmgr/gdm/notify	2013-02-20 07:28:36.000000000 +0100
++++ orig.SUNWut.new/opt/SUNWut/lib/xmgr/gdm/notify	2013-09-03 15:33:06.979814770 +0200
+@@ -53,20 +53,6 @@
+ # be certain that gdm is running
+ #
+ 
+-typeset -i count=1000
+-
+-while (( $count > 0 ))
+-do
+-	count=$(($count-1))
+-	pgrep -P 1 -u 0 $DMNAME >/dev/null
+-	if (( $? != 0 ))
+-	then
+-		sleep 15
+-	else
+-		count=0
+-	fi
+-done
+-
+ #Cleanup if old links are lying around
+ if [ -L  "$PRESESSION_DIR/:$dpy" ]; then
+ 	rm  "$PRESESSION_DIR/:$dpy"
+diff -ru orig.SUNWut/opt/SUNWut/lib/xmgr/gdm/reset-dpy orig.SUNWut.new/opt/SUNWut/lib/xmgr/gdm/reset-dpy
+--- orig.SUNWut/opt/SUNWut/lib/xmgr/gdm/reset-dpy	2013-02-20 07:28:36.000000000 +0100
++++ orig.SUNWut.new/opt/SUNWut/lib/xmgr/gdm/reset-dpy	2013-09-03 15:26:49.397240939 +0200
+@@ -1,4 +1,4 @@
+-#!/bin/sh
++#!/bin/bash
+ #
+ # ident "@(#)gdm-reset-dpy.sh	1.14	12/06/27 Oracle"
+ #
+diff -ru orig.SUNWut/opt/SUNWut/sbin/utconfig orig.SUNWut.new/opt/SUNWut/sbin/utconfig
+--- orig.SUNWut/opt/SUNWut/sbin/utconfig	2013-02-20 07:28:38.000000000 +0100
++++ orig.SUNWut.new/opt/SUNWut/sbin/utconfig	2013-09-03 15:26:09.013821187 +0200
+@@ -290,39 +290,27 @@
+ }
+ 
+ UTInstalled() {
+-  ${G_MEDIA_DIR}/utprodinfo -t installed SUNWuta
+-  return $?
++  return 0
+ }
+ 
+ LdapClientInstalled() {
+-  ${G_MEDIA_DIR}/utprodinfo -t installed $LCL_PACKAGE 2> /dev/null
+-  return $?
++  return 0
+ }
+ 
+ LdapClientInstallPartial() {
+-  ${G_MEDIA_DIR}/utprodinfo -t partial $LCL_PACKAGE
+-  return $?  
++  return 1
+ }
+ 
+ SRDSInstalled() {
+-  ${G_MEDIA_DIR}/utprodinfo -t installed $SRDS_PACKAGE
+-  return $?
++  return 0
+ }
+ 
+ SRDSInstallPartial() {
+-  ${G_MEDIA_DIR}/utprodinfo -t partial $SRDS_PACKAGE
+-  return $?  
++  return 1
+ }
+ 
+ SRDSVersion() {
+-  INSTALLED_VERSION="$(${G_MEDIA_DIR}/utprodinfo -p $SRDS_PACKAGE PRODVERS)"
+-  #
+-  # above var is global, used in calling func error msg
+-
+-  case "$INSTALLED_VERSION" in
+-    $1) return 0;;
+-    *)  return 1;;
+-  esac
++  return 0
+ }
+ 
+ KioskInstalled() {
+diff -ru orig.SUNWut/opt/SUNWut/sbin/utreplica orig.SUNWut.new/opt/SUNWut/sbin/utreplica
+--- orig.SUNWut/opt/SUNWut/sbin/utreplica	2013-02-20 07:28:38.000000000 +0100
++++ orig.SUNWut.new/opt/SUNWut/sbin/utreplica	2013-09-03 15:28:26.747842082 +0200
+@@ -80,7 +80,7 @@
+                         ETCSERVICES=/etc/inet/services
+ 			LOGFILE="/var/adm/log/$PROGRAM_ID.${TIMESTAMP}.log"
+                         ;;
+-                Linux)  LCL_PACKAGE="$(rpm -qf /usr/bin/ldapadd 2>/dev/null)"
++                Linux)  LCL_PACKAGE="ldap-utils"
+                         LDAPSEARCH="/usr/bin/ldapsearch -x -LLL "
+ 			GREP=/bin/grep
+                         ETCSERVICES=/etc/services
+@@ -296,39 +296,27 @@
+ }
+ 
+ UTInstalled() {
+-  $UTLIBDIR/utprodinfo -t installed SUNWuta
+-  return $?
++  return 0
+ }
+ 
+ LdapClientInstalled() {
+-  $UTLIBDIR/utprodinfo -t installed $LCL_PACKAGE
+-  return $?
++  return 0
+ }
+ 
+ LdapClientInstallPartial() {
+-  $UTLIBDIR/utprodinfo -t partial $LCL_PACKAGE
+-  return $?  
++  return 1
+ }
+ 
+ SunDSInstalled() {
+-  $UTLIBDIR/utprodinfo -t installed $SRDS_PACKAGE
+-  return $?
++  return 0
+ }
+ 
+ SunDSInstallPartial() {
+-  $UTLIBDIR/utprodinfo -t partial $SRDS_PACKAGE
+-  return $?  
++  return 1
+ }
+ 
+ SunDSVersion() {
+-  INSTALLED_VERSION="$($UTLIBDIR/utprodinfo -p $SRDS_PACKAGE PRODVERS 2>/dev/null)"
+-  #
+-  # above var is global, used in calling func error msg
+-
+-  case "$INSTALLED_VERSION" in
+-    $1) return 0;;
+-    *)  return 1;;
+-  esac
++  return 0
+ }
+ 
+ # ReplyYesOrNo
+diff -ru orig.SUNWut/opt/SUNWuttsc/lib/uttscadm orig.SUNWut.new/opt/SUNWuttsc/lib/uttscadm
+--- orig.SUNWut/opt/SUNWuttsc/lib/uttscadm	2013-02-05 13:04:09.000000000 +0100
++++ orig.SUNWut.new/opt/SUNWuttsc/lib/uttscadm	2013-09-03 15:34:19.522772095 +0200
+@@ -432,7 +432,8 @@
+ 
+     case "$OS" in # {
+     Linux)
+-      chkconfig --add uttscp > /dev/null
++      update-rc.d uttscp defaults > /dev/null
++      update-rc.d uttscp enable 2 3 4 5 > /dev/null
+     ;;
+ 
+     esac # }
+@@ -459,7 +460,7 @@
+ 
+     case "$OS" in # {
+     Linux)
+-      chkconfig --del uttscp > /dev/null
++      update-rc.d -f uttscp remove > /dev/null
+     ;;
+ 
+     esac # }
