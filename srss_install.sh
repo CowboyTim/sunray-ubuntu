@@ -16,7 +16,7 @@
 # 0. download the srss 4.1 linux from Sun.
 # 1. install software needed to build our own package:
 #     64-bit:
-#       apt-get install fakeroot alien build-essential linux-headers-3.2.0-2-amd64
+#       apt-get install fakeroot alien build-essential linux-headers-amd64
 #     
 #     Optionally, you can add different kernels. The patch for the modules that
 #     I made makes it possible that multiple kernel-versioned modules can be
@@ -303,10 +303,10 @@ Maintainer: root <root@whatever.com>
 Package: srss
 Architecture: amd64
 Depends: \${shlibs:Depends}, ed, pulseaudio, pdksh, lib32stdc++6, libldap-2.4-2, ldap-utils, gawk, ia32-libs, xkb-data, tftpd, $KDEPS
-Conflicts: xkb-data-legacy, gdm, xdm
+Conflicts: xkb-data-legacy, gdm, xdm, mdm, virtualbox-guest-x11
 Recommends: openbox
 Provides: gdm3
-Replaces: gdm3, gdm, gnome-control-center-data
+Replaces: gdm3, gdm, mdm, gnome-control-center-data
 Suggests: xfce4, gnome, kde
 Description: Sun Ray server software
  This is Oracle's Sun Ray server software nicely packaged into one clean debian
