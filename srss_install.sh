@@ -30,6 +30,7 @@
 #     echo "deb http://some.repository.org/debs/srss /" > /etc/apt/sources.list.d/srss.list
 #     echo "deb http://ftp.debian.org/debian/ unstable main non-free contrib"      > /etc/apt/sources.list.d/unstable.list
 #     echo "deb-src http://ftp.debian.org/debian/ unstable main non-free contrib" >> /etc/apt/sources.list.d/unstable.list
+#     dpkg --add-architecture i386
 #     apt-get update
 #     apt-get install srss
 #     update-rc.d zsunray-init enable  3 5
@@ -91,10 +92,9 @@
 #
 
 source_dir=$1
-updates_dir=$2
-version=4.4
+version=5.4.1
 if [ -z $source_dir ]; then
-    echo "Usage: $0 <srss software source dir> <updates dir>"
+    echo "Usage: $0 <srss software source dir>"
     exit 0
 fi
 
@@ -110,9 +110,9 @@ echo "Using $tmpdir"
 echo "Adding regular rpms..."
 for rpm in \
             $source_dir/{Sun_Ray_*,Docs,Kiosk*}/Linux/Packages/*.rpm \
-            $updates_dir/Components/*/Content/{Sun_Ray_*,Docs,Kiosk*,Sun_Ray_Connector*,VMware_View_Connector*}/Linux/Packages/*.rpm \
-            $updates_dir/Components/*/Patches/linux/*.rpm \
-            $updates_dir/Version/Linux/Packages/*.rpm; do
+            $source_dir/Components/*/Content/{Sun_Ray_*,Docs,Kiosk*,Sun_Ray_Connector*,VMware_View_Connector*}/Linux/Packages/*.rpm \
+            $source_dir/Components/*/Patches/linux/*.rpm \
+            $source_dir/Version/Linux/Packages/*.rpm; do
     echo "Unpacking rpm $rpm"
     rpm2cpio $rpm|(cd $tmpdir; \
         cpio --extract \
@@ -222,7 +222,6 @@ for extra_pkg in $tmpdir/{libgdbm3*,libmotif3*,libglib1.2ldbl*,libxfont1*,libfon
 done
 
 echo "Patching... SunRay /opt/SUNWut software"
-cp -a $tmpdir/ /tmp/orig.SUNWut
 if [ $version = '4.2' ]; then
     cd $tmpdir/opt/SUNWut
     patch -p3 < $here/srss-patches/srss4.2.debian-3.patch
@@ -233,6 +232,13 @@ fi
 if [ $version = '4.4' ]; then
     cd $tmpdir/
     patch -p1 < $here/srss-patches/srss4.4.debian-3.patch
+    echo "Xstartup helper must not be +x, as it's a ksh script, being"
+    echo "sourced by a sh program else, see /etc/opt/SUNWut/gdm/SunRayPreSession/Default"
+    chmod -x $tmpdir/opt/SUNWut/lib/prototype/Xstartup.SUNWut.prototype
+fi
+if [ $version = '5.4.1' ]; then
+    cd $tmpdir/
+    patch -p1 < $here/srss-patches/srss5.4.1.debian-3.patch
     echo "Xstartup helper must not be +x, as it's a ksh script, being"
     echo "sourced by a sh program else, see /etc/opt/SUNWut/gdm/SunRayPreSession/Default"
     chmod -x $tmpdir/opt/SUNWut/lib/prototype/Xstartup.SUNWut.prototype
@@ -302,7 +308,7 @@ Maintainer: root <root@whatever.com>
 
 Package: srss
 Architecture: amd64
-Depends: \${shlibs:Depends}, ed, pulseaudio, pdksh, lib32stdc++6, libldap-2.4-2, ldap-utils, gawk, ia32-libs, xkb-data, tftpd, $KDEPS
+Depends: \${shlibs:Depends}, ed, pulseaudio, pdksh, lib32stdc++6, ia32-libs (=20130215), ldap-utils, gawk, xkb-data, tftpd
 Conflicts: xkb-data-legacy, gdm, xdm, mdm, virtualbox-guest-x11
 Recommends: openbox
 Provides: gdm3
